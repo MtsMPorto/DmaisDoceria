@@ -1,0 +1,19 @@
+.input-style { width:100%; background:var(--input-background); border:1.5px solid var(--border); border-radius:0.75rem; padding:0.55rem 0.875rem; font-size:0.875rem; color:var(--foreground); outline:none; transition:border-color 0.15s; font-family:'Nunito',sans-serif; }
+.input-style:focus { border-color:var(--accent); }
+.input-style::placeholder { color:var(--muted-foreground); opacity:0.7; }
+.scrollbar-hide { scrollbar-width:none; -ms-overflow-style:none; }
+.scrollbar-hide::-webkit-scrollbar { display:none; }
+@media (max-width: 640px) {
+  html, body { scrollbar-width:none; -ms-overflow-style:none; }
+  html::-webkit-scrollbar, body::-webkit-scrollbar { display:none; }
+}
+:root {
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+}
+@keyframes rippleExpand {
+  from { clip-path: circle(0% at var(--rx, 90%) var(--ry, 8%)); opacity: 0; }
+  to   { clip-path: circle(150% at var(--rx, 90%) var(--ry, 8%)); opacity: 1; }
+}
+.search-ripple-enter { animation: rippleExpand 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+.search-ripple-done { clip-path: circle(150% at 90% 8%); animation: rippleExpand 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
