@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import sharp from "sharp";
 import { AppError } from "../../shared/utils/errors.js";
 
 export function imageType(data: Buffer): { mime: string; extension: string } {
@@ -10,21 +11,40 @@ export function imageType(data: Buffer): { mime: string; extension: string } {
   throw new AppError(422, "INVALID_IMAGE", "Selecione uma imagem JPG, PNG ou WebP válida.");
 }
 
-export async function uploadProductImage(data: unknown) {
+export async function processProductImage(data: unknown): Promise<Buffer> {
   if (!Buffer.isBuffer(data) || data.length === 0 || data.length > 5 * 1024 * 1024) {
     throw new AppError(422, "INVALID_IMAGE", "Selecione uma imagem de até 5 MB.");
   }
-  const type = imageType(data);
+  imageType(data);
+  try {
+    const pipeline = sharp(data, { limitInputPixels: 25_000_000, failOn: "warning" });
+    const metadata = await pipeline.metadata();
+    if (!metadata.width || !metadata.height || !["jpeg", "png", "webp"].includes(metadata.format ?? "") || (metadata.pages ?? 1) > 1) {
+      throw new Error("Unsupported image");
+    }
+    // Re-encode pixels only: do not preserve EXIF, GPS, XMP or other metadata.
+    const output = await pipeline.rotate()
+      .resize({ width: 2000, height: 2000, fit: "inside", withoutEnlargement: true })
+      .webp({ quality: 85 }).timeout({ seconds: 15 }).toBuffer();
+    if (output.length > 5 * 1024 * 1024) throw new Error("Output too large");
+    return output;
+  } catch {
+    throw new AppError(422, "INVALID_IMAGE", "Imagem inválida ou muito grande. Use JPG, PNG ou WebP sem animação, com até 25 megapixels e 5 MB.");
+  }
+}
+
+export async function uploadProductImage(data: unknown) {
+  const processed = await processProductImage(data);
   const base = process.env.SUPABASE_URL?.replace(/\/$/, "");
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!base || !key) throw new AppError(503, "UPLOAD_UNAVAILABLE", "O armazenamento das imagens ainda não foi configurado.");
   const bucket = "product-images";
-  const path = `${randomUUID()}.${type.extension}`;
+  const path = `${randomUUID()}.webp`;
   try {
     const response = await fetch(`${base}/storage/v1/object/${bucket}/${path}`, {
       method: "POST",
-      headers: { Authorization: `Bearer ${key}`, apikey: key, "Content-Type": type.mime, "x-upsert": "false" },
-      body: new Uint8Array(data),
+      headers: { Authorization: `Bearer ${key}`, apikey: key, "Content-Type": "image/webp", "x-upsert": "false" },
+      body: new Uint8Array(processed),
       signal: AbortSignal.timeout(30_000),
     });
     if (!response.ok) throw new Error("Storage upload failed");

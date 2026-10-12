@@ -12,3 +12,8 @@ export async function me(_req: Request, res: Response): Promise<void> {
   const admin = await authService.getCurrentAdmin(adminIdOf(res));
   res.json(admin);
 }
+
+export async function logout(_req: Request, res: Response): Promise<void> {
+  await authService.logout(adminIdOf(res), res.locals.adminSessionId);
+  res.json({ success: true });
+}

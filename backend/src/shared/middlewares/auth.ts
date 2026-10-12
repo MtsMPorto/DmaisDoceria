@@ -13,9 +13,11 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
   }
 
   let adminId: number;
+  let sessionId: string;
   try {
     const payload = jwt.verify(token, env.jwtSecret, { algorithms: ["HS256"] });
-    if (typeof payload !== "object" || (payload.role !== undefined && payload.role !== "admin")) throw new Error("Invalid role");
+    if (typeof payload !== "object" || payload.role !== "admin" || typeof payload.sid !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(payload.sid)) throw new Error("Invalid session");
+    sessionId = payload.sid;
     const sub = typeof payload === "object" ? payload.sub : undefined;
     adminId = Number(sub);
     if (!Number.isInteger(adminId) || adminId <= 0) throw new Error("sub inválido");
@@ -23,9 +25,10 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
     throw new AppError(401, "UNAUTHORIZED", "Token inválido ou expirado.");
   }
 
-  const admin = await authRepository.findActiveAdminById(adminId);
+  const admin = await authRepository.findValidSession(sessionId, adminId);
   if (!admin) throw new AppError(401, "UNAUTHORIZED", "Sessão inválida. Entre novamente.");
 
   res.locals.adminId = adminId;
+  res.locals.adminSessionId = sessionId;
   next();
 }

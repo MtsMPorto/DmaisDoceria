@@ -10,14 +10,17 @@ import { useCart } from "@/contexts/CartContext";
 // import { Stars } from "@/components/ui/Stars";
 import { WaIcon } from "@/components/ui/WaIcon";
 import { StockBadge } from "@/components/store/StockBadge";
-import { UpsellModal } from "@/components/store/UpsellModal";
+// Sugestões após adicionar desativadas temporariamente.
+// import { UpsellModal } from "@/components/store/UpsellModal";
 import { ErrorBox, LoadingBox } from "@/components/ui/AsyncState";
 
 export default function ProductPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { products, loading, error, reload } = useProducts();
-  const { addToCart, updateQty, cart, cartKey, totalItems } = useCart();
+  const { addToCart, cart, cartKey, totalItems } = useCart();
+  const [quantity, setQuantity] = useState(1);
+  useEffect(() => { setQuantity(1); }, [id]);
   const checkoutForm = useCheckoutForm();
 
   const product = products.find((p) => p.id === Number(id));
@@ -25,16 +28,16 @@ export default function ProductPage() {
   const [selectedFlavor, setSelectedFlavor] = useState<string | undefined>(
     product?.flavors?.[0]
   );
-  const [showUpsell, setShowUpsell] = useState(false);
+  // const [showUpsell, setShowUpsell] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
 
   useEffect(() => {
-    if (!cartOpen && !checkoutOpen && !showUpsell) return;
+    if (!cartOpen && !checkoutOpen) return;
     const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = previous; };
-  }, [cartOpen, checkoutOpen, showUpsell]);
+  }, [cartOpen, checkoutOpen]);
 
   // Reset flavor when product changes
   useEffect(() => {
@@ -66,24 +69,23 @@ export default function ProductPage() {
     .slice(0, 4);
 
   // Upsell: 1-2 from related or other active products
-  const upsellProducts = related.slice(0, 2).length > 0
-    ? related.slice(0, 2)
-    : products.filter((p) => p.active && p.id !== product.id).slice(0, 2);
+  // const upsellProducts = related.slice(0, 2).length > 0
+  //   ? related.slice(0, 2)
+  //   : products.filter((p) => p.active && p.id !== product.id).slice(0, 2);
 
   const flavor = product.flavors?.includes(selectedFlavor ?? "") ? selectedFlavor : product.flavors?.[0];
   const currentKey = `${product.id}::${flavor ?? ""}`;
   const inCart = cart.find((i) => cartKey(i) === currentKey);
   const totalForProduct = cart.filter(i => i.id === product.id).reduce((sum, i) => sum + i.qty, 0);
   const atStockLimit = totalForProduct >= product.stock;
-
-  function increaseQuantity() {
-    if (!atStockLimit) addToCart(product, flavor);
-  }
+  const remaining = Math.max(0, Math.min(9999 - (inCart?.qty ?? 0), product.stock - totalForProduct));
+  const selectedQuantity = Math.min(quantity, remaining);
 
   function handleAddToCart() {
-    if (atStockLimit) return;
-    increaseQuantity();
-    setShowUpsell(true);
+    if (selectedQuantity < 1) return;
+    addToCart(product, flavor, selectedQuantity);
+    setQuantity(1);
+    // setShowUpsell(true);
   }
 
   return (
@@ -189,16 +191,20 @@ export default function ProductPage() {
 
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white px-4 py-3 border border-border">
             <div>
-              <p className="text-sm font-bold text-primary">Quantidade no carrinho</p>
+              <p className="text-sm font-bold text-primary">Quantidade para adicionar</p>
+              <p className="text-xs text-muted-foreground" role="status">{inCart?.qty ?? 0} no carrinho{flavor ? " deste sabor" : ""}</p>
               {flavor && <p className="text-xs text-muted-foreground">Sabor: {flavor}</p>}
             </div>
             <div className="flex items-center gap-3">
-              <button type="button" onClick={() => updateQty(currentKey, -1)} disabled={!inCart}
+              <button type="button" onClick={() => setQuantity(Math.max(1, selectedQuantity - 1))} disabled={selectedQuantity <= 1}
                 aria-label="Diminuir quantidade" className="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center disabled:opacity-40">
                 <Minus size={16} />
               </button>
-              <span aria-live="polite" className="min-w-8 text-center font-black text-primary">{inCart?.qty ?? 0}</span>
-              <button type="button" onClick={increaseQuantity} disabled={atStockLimit}
+              <input type="number" min={remaining > 0 ? 1 : 0} max={remaining} step={1} aria-label="Quantidade para adicionar"
+                value={selectedQuantity} disabled={remaining === 0}
+                onChange={event => setQuantity(Math.max(1, Math.min(remaining, Math.trunc(Number(event.target.value) || 1))))}
+                className="w-16 text-center font-black text-primary rounded-lg border border-border py-2" />
+              <button type="button" onClick={() => setQuantity(selectedQuantity + 1)} disabled={selectedQuantity >= remaining}
                 aria-label="Aumentar quantidade" className="w-9 h-9 rounded-full bg-accent text-white flex items-center justify-center disabled:opacity-40">
                 <Plus size={16} />
               </button>
@@ -248,11 +254,10 @@ export default function ProductPage() {
                 ← Voltar à loja
               </Link>
               <button
-                onClick={handleAddToCart}
-                disabled={atStockLimit}
+                onClick={() => setCartOpen(true)}
                 className="flex-1 py-4 rounded-full text-white font-black flex items-center justify-center gap-2 shadow-lg"
                 style={{ background: "#27408A" }}>
-                <ShoppingCart size={18} /> Adicionar mais
+                <ShoppingCart size={18} /> Visualizar o carrinho
               </button>
             </div>
           ) : (
@@ -271,14 +276,14 @@ export default function ProductPage() {
       </div>
 
       {/* UPSELL MODAL */}
-      {showUpsell && (
+      {/* {showUpsell && (
         <UpsellModal
           product={product}
           suggestions={upsellProducts}
           onClose={() => setShowUpsell(false)}
           onGoToCart={() => { setShowUpsell(false); setCartOpen(true); }}
         />
-      )}
+      )} */}
       {cartOpen && <CartDrawer onClose={() => setCartOpen(false)} onCheckout={() => { setCartOpen(false); setCheckoutOpen(true); }} />}
       {checkoutOpen && <CheckoutModal form={checkoutForm} onClose={() => setCheckoutOpen(false)} />}
     </div>

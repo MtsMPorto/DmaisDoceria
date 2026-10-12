@@ -13,7 +13,7 @@ import { api, errorMessage } from "@/services/api";
 import { adminApi } from "@/services/endpoints";
 import type { AdminProduct } from "@/types/api";
 
-type SortField = "name" | "price" | "stock";
+type SortField = "name" | "cost" | "stock";
 
 export default function AdminProducts() {
   const products = useAsync(() => adminApi.products(), []);
@@ -37,14 +37,15 @@ export default function AdminProducts() {
 
   const stats = useMemo(() => {
     const active = list.filter((product) => product.active);
-    // Valor de VENDA do estoque (estoque x preço de venda), em centavos inteiros.
-    const cents = active.reduce((sum, product) => sum + product.stock * Math.round(Number(product.price) * 100), 0);
+    // Soma somente os custos informados, em centavos inteiros.
+    const cents = active.reduce((sum, product) => sum + product.stock * Math.round(Number(product.cost ?? 0) * 100), 0);
     return {
       total: list.length,
       active: active.length,
       low: active.filter((product) => product.stock > 0 && product.stock <= threshold).length,
       out: active.filter((product) => product.stock === 0).length,
-      saleValue: (cents / 100).toFixed(2),
+      costValue: (cents / 100).toFixed(2),
+      missingCosts: active.filter((product) => product.stock > 0 && product.cost == null).length,
     };
   }, [list, threshold]);
 
@@ -58,7 +59,11 @@ export default function AdminProducts() {
     });
     const direction = sortDir === "asc" ? 1 : -1;
     return filtered.sort((a, b) => {
-      if (sortField === "price") return (Number(a.price) - Number(b.price)) * direction;
+      if (sortField === "cost") {
+        if (a.cost == null) return b.cost == null ? 0 : 1;
+        if (b.cost == null) return -1;
+        return (Number(a.cost) - Number(b.cost)) * direction;
+      }
       if (sortField === "stock") return (a.stock - b.stock) * direction;
       return a.name.localeCompare(b.name, "pt-BR") * direction;
     });
@@ -100,7 +105,7 @@ export default function AdminProducts() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[
             { label: "Total de Produtos", value: String(stats.total), icon: <Package size={18} />, color: "bg-blue-500", sub: `${stats.active} ativos` },
-            { label: "Valor de venda do estoque", value: brl(stats.saleValue), icon: <TrendingUp size={18} />, color: "bg-green-500", sub: "estoque × preço de venda" },
+            { label: "Custo do estoque", value: brl(stats.costValue), icon: <TrendingUp size={18} />, color: "bg-green-500", sub: stats.missingCosts > 0 ? `Total parcial: ${stats.missingCosts} produto(s) sem custo` : "estoque × custo" },
             { label: "Estoque Baixo", value: String(stats.low), icon: <AlertTriangle size={18} />, color: "bg-amber-500", sub: `≤ ${threshold} unidades` },
             { label: "Sem Estoque", value: String(stats.out), icon: <Archive size={18} />, color: "bg-red-500", sub: "produtos zerados" },
           ].map(({ label, value, icon, color, sub }) => (
@@ -158,8 +163,8 @@ export default function AdminProducts() {
                   <span className="flex items-center gap-1">Produto {sortIcon("name")}</span>
                 </th>
                 <th className="px-4 py-3 text-muted-foreground font-bold text-xs uppercase tracking-wide hidden md:table-cell">Categoria</th>
-                <th className="px-4 py-3 text-muted-foreground font-bold text-xs uppercase tracking-wide cursor-pointer" onClick={() => toggleSort("price")}>
-                  <span className="flex items-center gap-1">Preço {sortIcon("price")}</span>
+                <th className="px-4 py-3 text-muted-foreground font-bold text-xs uppercase tracking-wide cursor-pointer" onClick={() => toggleSort("cost")}>
+                  <span className="flex items-center gap-1">Custo {sortIcon("cost")}</span>
                 </th>
                 <th className="px-4 py-3 text-muted-foreground font-bold text-xs uppercase tracking-wide cursor-pointer" onClick={() => toggleSort("stock")}>
                   <span className="flex items-center gap-1">Estoque {sortIcon("stock")}</span>
@@ -182,8 +187,8 @@ export default function AdminProducts() {
                     <span className="bg-primary/10 text-primary text-xs font-bold px-2 py-0.5 rounded-full">{product.category}</span>
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
-                    <p className="text-primary font-black tabular-nums">{brl(product.price)}</p>
-                    <p className="text-muted-foreground text-[10px]">mín. {product.minQty} un.{product.cost ? ` · custo ${brl(product.cost)}` : ""}</p>
+                    <p className="text-primary font-black tabular-nums">{product.cost == null ? "Não informado" : brl(product.cost)}</p>
+                    <p className="text-muted-foreground text-[10px]">mín. {product.minQty} un.</p>
                   </td>
                   <td className="px-4 py-3"><StockBadge stock={product.stock} threshold={threshold} /></td>
                   <td className="px-4 py-3">

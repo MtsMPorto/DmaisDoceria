@@ -6,7 +6,7 @@ import { useProducts } from "@/contexts/ProductsContext";
 
 interface CartContextValue {
   cart: CartItem[];
-  addToCart: (product: Product, flavor?: string) => void;
+  addToCart: (product: Product, flavor?: string, quantity?: number) => void;
   updateQty: (key: string, delta: number) => void;
   removeItem: (key: string) => void;
   clearCart: () => void;
@@ -53,15 +53,19 @@ export function CartProvider({ children }: { children: ReactNode }) {
     return itemKey(item.id, item.selectedFlavor);
   }
 
-  function addToCart(product: Product, flavor?: string) {
+  function addToCart(product: Product, flavor?: string, quantity = 1) {
+    if (!Number.isSafeInteger(quantity) || quantity < 1) return;
     const key = itemKey(product.id, flavor);
     setCart((prev) => {
       if (prev.filter(i => i.id === product.id).reduce((sum,i) => sum+i.qty,0) >= product.stock) return prev;
       if (product.flavors?.length && !product.flavors.includes(flavor || "")) return prev;
       const existing = prev.find((i) => itemKey(i.id, i.selectedFlavor) === key);
+      const available = product.stock - prev.filter(i => i.id === product.id).reduce((sum, i) => sum + i.qty, 0);
+      const amount = Math.min(quantity, available, 9999 - (existing?.qty ?? 0));
+      if (amount <= 0) return prev;
       if (existing)
-        return prev.map((i) => itemKey(i.id, i.selectedFlavor) === key ? { ...i, qty: Math.min(9999, i.qty + 1) } : i);
-      return [...prev, { ...product, qty: 1, selectedFlavor: flavor }];
+        return prev.map((i) => itemKey(i.id, i.selectedFlavor) === key ? { ...i, qty: i.qty + amount } : i);
+      return [...prev, { ...product, qty: amount, selectedFlavor: flavor }];
     });
   }
 

@@ -1,4 +1,4 @@
-import { getOrderAttempt, orderAttemptKey } from "@/lib/orderAttempt";
+import { checkoutGeneration, exclusiveCheckout, getOrderAttempt, orderAttemptKey } from "@/lib/orderAttempt";
 import { AccountModal } from "@/components/account/AccountModal";
 import { useAccount } from "@/contexts/AccountContext";
 import { accountRequest } from "@/services/accountService";
@@ -43,6 +43,9 @@ function AuthenticatedCheckout({ form, onClose }: { form: CheckoutForm; onClose:
   const [sending, setSending] = useState(false);
   const [problems, setProblems] = useState<string[]>([]);
   const [sentLink, setSentLink] = useState<string | null>(null);
+  const [generation] = useState(() => {
+    try { return checkoutGeneration(localStorage); } catch { return null; }
+  });
 
 
   // Mesmo requestId em tentativas repetidas do MESMO pedido (idempotência). Se o conteúdo mudar,
@@ -78,15 +81,20 @@ function AuthenticatedCheckout({ form, onClose }: { form: CheckoutForm; onClose:
       items: toOrderItems(cart),
     };
     if (!profile) return;
-    let attempt: ReturnType<typeof getOrderAttempt>;
-    try { attempt = getOrderAttempt(localStorage, orderAttemptKey(profile.id, payload.items), () => crypto.randomUUID()); }
-    catch { setProblems(["Permita o armazenamento do navegador para finalizar o pedido com seguran\u00e7a."]); return; }
+    if (generation === null) {
+      setProblems(["Permita o armazenamento do navegador para finalizar o pedido com segurança."]);
+      return;
+    }
 
     // Abre a janela já no clique (navegadores bloqueiam abrir depois de aguardar a rede).
     const popup = window.open("", "_blank");
     setSending(true);
     try {
-      const receipt = await accountRequest<OrderReceipt>("/api/orders", { requestId: attempt.requestId, items: payload.items });
+      const { receipt, attempt } = await exclusiveCheckout(navigator.locks, localStorage, generation, async () => {
+        const attempt = getOrderAttempt(localStorage, orderAttemptKey(profile.id, payload.items), () => crypto.randomUUID());
+        const receipt = await accountRequest<OrderReceipt>("/api/orders", { requestId: attempt.requestId, items: payload.items });
+        return { receipt, attempt };
+      }, () => crypto.randomUUID());
       const text = buildReceiptMessage(customer, receipt, settings?.companyName ?? "D'mais Comercial de Doces");
       const link = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(text)}`;
       clearCart();
@@ -96,7 +104,7 @@ function AuthenticatedCheckout({ form, onClose }: { form: CheckoutForm; onClose:
       setSentLink(link);
     } catch (err) {
       popup?.close();
-      setProblems(err instanceof ApiError ? problemMessages(err) : ["Não foi possível registrar o pedido. Tente de novo."]);
+      setProblems(err instanceof ApiError ? problemMessages(err) : [err instanceof Error && (err.message.startsWith("Este carrinho") || err.message.startsWith("Atualize seu navegador")) ? err.message : "Não foi possível registrar o pedido. Tente de novo."]);
     } finally {
       setSending(false);
     }

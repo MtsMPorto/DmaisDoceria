@@ -1,6 +1,6 @@
 import { ADMIN_SESSION_KEY, ADMIN_TOKEN_KEY } from "@/config/constants";
 import { API_URL } from "@/config/env";
-import { api, clearSession } from "@/services/api";
+import { api, ApiError, clearSession } from "@/services/api";
 
 export const INVALID_CREDENTIALS_MESSAGE = "Usuário ou senha incorretos.";
 export const CONNECTION_ERROR_MESSAGE = "Não foi possível conectar ao servidor. Tente novamente.";
@@ -43,7 +43,12 @@ export async function login(username: string, password: string): Promise<void> {
   sessionStorage.setItem(ADMIN_SESSION_KEY, "true");
 }
 
-export function logout(): void {
+export async function logout(): Promise<void> {
+  try {
+    await api("/api/auth/logout", { method: "POST", auth: true });
+  } catch (error) {
+    if (!(error instanceof ApiError && error.status === 401)) throw error;
+  }
   clearSession();
 }
 

@@ -1,5 +1,22 @@
 import { prisma } from "../../config/prisma.js";
 
+export function createSession(id: string, adminId: number, expiresAt: Date) {
+  return prisma.adminSession.create({ data: { id, adminId, expiresAt } });
+}
+
+export function findValidSession(id: string, adminId: number) {
+  return prisma.adminSession.findFirst({
+    where: { id, adminId, revokedAt: null, expiresAt: { gt: new Date() }, admin: { active: true } },
+    select: { id: true },
+  });
+}
+
+export function revokeSession(id: string, adminId: number) {
+  return prisma.adminSession.updateMany({
+    where: { id, adminId, revokedAt: null }, data: { revokedAt: new Date() },
+  });
+}
+
 export function findActiveAdminById(id: number) {
   return prisma.adminUser.findFirst({
     where: { id, active: true },
