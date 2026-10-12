@@ -1,4 +1,5 @@
 import { compare, hashSync } from "bcryptjs";
+import { randomUUID } from "node:crypto";
 import jwt, { type SignOptions } from "jsonwebtoken";
 import { env } from "../../config/env.js";
 import { LOGIN_LOCK_MS, LOGIN_MAX_FAILED_ATTEMPTS } from "../../config/limits.js";
@@ -34,11 +35,19 @@ export async function login({ username, password }: LoginInput): Promise<{ token
 
   await repository.registerSuccessfulLogin(admin.id);
 
-  const token = jwt.sign({ sub: String(admin.id), role: "admin" }, env.jwtSecret, {
+  const sessionId = randomUUID();
+  const token = jwt.sign({ sub: String(admin.id), role: "admin", sid: sessionId }, env.jwtSecret, {
     algorithm: "HS256",
     expiresIn: env.jwtExpiresIn as SignOptions["expiresIn"],
   });
+  const payload = jwt.decode(token) as jwt.JwtPayload;
+  if (!payload.exp) throw new Error("Missing token expiration");
+  await repository.createSession(sessionId, admin.id, new Date(payload.exp * 1000));
   return { token };
+}
+
+export async function logout(adminId: number, sessionId: string) {
+  await repository.revokeSession(sessionId, adminId);
 }
 
 export async function getCurrentAdmin(id: number) {

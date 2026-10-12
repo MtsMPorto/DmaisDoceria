@@ -1,16 +1,17 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router";
-import { ArrowLeft, ShoppingCart, Package, Truck } from "lucide-react";
+import { ArrowLeft, ShoppingCart, Package, Truck, Minus, Plus } from "lucide-react";
+import { CartDrawer } from "@/components/store/CartDrawer";
+import { CheckoutModal } from "@/components/store/CheckoutModal";
+import { useCheckoutForm } from "@/hooks/useCheckoutForm";
 import logoImg from "@/assets/images/Logo_Doces-removebg-preview__1_.png";
 import { useProducts } from "@/contexts/ProductsContext";
 import { useCart } from "@/contexts/CartContext";
 // import { Stars } from "@/components/ui/Stars";
 import { WaIcon } from "@/components/ui/WaIcon";
 import { StockBadge } from "@/components/store/StockBadge";
-import { UpsellModal } from "@/components/store/UpsellModal";
-import { CartDrawer } from "@/components/store/CartDrawer";
-import { CheckoutModal } from "@/components/store/CheckoutModal";
-import { useCheckoutForm } from "@/hooks/useCheckoutForm";
+// Sugestões após adicionar desativadas temporariamente.
+// import { UpsellModal } from "@/components/store/UpsellModal";
 import { ErrorBox, LoadingBox } from "@/components/ui/AsyncState";
 
 export default function ProductPage() {
@@ -18,23 +19,25 @@ export default function ProductPage() {
   const navigate = useNavigate();
   const { products, loading, error, reload } = useProducts();
   const { addToCart, cart, cartKey, totalItems } = useCart();
+  const [quantity, setQuantity] = useState(1);
+  useEffect(() => { setQuantity(1); }, [id]);
+  const checkoutForm = useCheckoutForm();
 
   const product = products.find((p) => p.id === Number(id));
 
   const [selectedFlavor, setSelectedFlavor] = useState<string | undefined>(
     product?.flavors?.[0]
   );
-  const [showUpsell, setShowUpsell] = useState(false);
+  // const [showUpsell, setShowUpsell] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
-  const checkoutForm = useCheckoutForm();
 
   useEffect(() => {
-    if (!cartOpen && !checkoutOpen && !showUpsell) return;
+    if (!cartOpen && !checkoutOpen) return;
     const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = previous; };
-  }, [cartOpen, checkoutOpen, showUpsell]);
+  }, [cartOpen, checkoutOpen]);
 
   // Reset flavor when product changes
   useEffect(() => {
@@ -66,17 +69,23 @@ export default function ProductPage() {
     .slice(0, 4);
 
   // Upsell: 1-2 from related or other active products
-  const upsellProducts = related.slice(0, 2).length > 0
-    ? related.slice(0, 2)
-    : products.filter((p) => p.active && p.id !== product.id).slice(0, 2);
+  // const upsellProducts = related.slice(0, 2).length > 0
+  //   ? related.slice(0, 2)
+  //   : products.filter((p) => p.active && p.id !== product.id).slice(0, 2);
 
-  const currentKey = `${product.id}::${selectedFlavor ?? ""}`;
+  const flavor = product.flavors?.includes(selectedFlavor ?? "") ? selectedFlavor : product.flavors?.[0];
+  const currentKey = `${product.id}::${flavor ?? ""}`;
   const inCart = cart.find((i) => cartKey(i) === currentKey);
+  const totalForProduct = cart.filter(i => i.id === product.id).reduce((sum, i) => sum + i.qty, 0);
+  const atStockLimit = totalForProduct >= product.stock;
+  const remaining = Math.max(0, Math.min(9999 - (inCart?.qty ?? 0), product.stock - totalForProduct));
+  const selectedQuantity = Math.min(quantity, remaining);
 
   function handleAddToCart() {
-    if (cart.filter(i => i.id === product.id).reduce((sum,i) => sum+i.qty,0) >= product.stock) return;
-    addToCart(product, selectedFlavor);
-    setShowUpsell(true);
+    if (selectedQuantity < 1) return;
+    addToCart(product, flavor, selectedQuantity);
+    setQuantity(1);
+    // setShowUpsell(true);
   }
 
   return (
@@ -180,6 +189,28 @@ export default function ProductPage() {
             </div>
           )}
 
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white px-4 py-3 border border-border">
+            <div>
+              <p className="text-sm font-bold text-primary">Quantidade para adicionar</p>
+              <p className="text-xs text-muted-foreground" role="status">{inCart?.qty ?? 0} no carrinho{flavor ? " deste sabor" : ""}</p>
+              {flavor && <p className="text-xs text-muted-foreground">Sabor: {flavor}</p>}
+            </div>
+            <div className="flex items-center gap-3">
+              <button type="button" onClick={() => setQuantity(Math.max(1, selectedQuantity - 1))} disabled={selectedQuantity <= 1}
+                aria-label="Diminuir quantidade" className="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center disabled:opacity-40">
+                <Minus size={16} />
+              </button>
+              <input type="number" min={remaining > 0 ? 1 : 0} max={remaining} step={1} aria-label="Quantidade para adicionar"
+                value={selectedQuantity} disabled={remaining === 0}
+                onChange={event => setQuantity(Math.max(1, Math.min(remaining, Math.trunc(Number(event.target.value) || 1))))}
+                className="w-16 text-center font-black text-primary rounded-lg border border-border py-2" />
+              <button type="button" onClick={() => setQuantity(selectedQuantity + 1)} disabled={selectedQuantity >= remaining}
+                aria-label="Aumentar quantidade" className="w-9 h-9 rounded-full bg-accent text-white flex items-center justify-center disabled:opacity-40">
+                <Plus size={16} />
+              </button>
+            </div>
+          </div>
+
           {/* No-price note */}
           <div className="flex items-center gap-2 px-4 py-3 rounded-2xl text-sm" style={{ background: "rgba(37,211,102,0.08)", border: "1px solid rgba(37,211,102,0.2)" }}>
             <WaIcon size={16} />
@@ -223,16 +254,16 @@ export default function ProductPage() {
                 ← Voltar à loja
               </Link>
               <button
-                disabled={cart.filter(i => i.id === product.id).reduce((sum,i) => sum+i.qty,0) >= product.stock} onClick={handleAddToCart}
+                onClick={() => setCartOpen(true)}
                 className="flex-1 py-4 rounded-full text-white font-black flex items-center justify-center gap-2 shadow-lg"
                 style={{ background: "#27408A" }}>
-                <ShoppingCart size={18} /> Adicionar mais
+                <ShoppingCart size={18} /> Visualizar o carrinho
               </button>
             </div>
           ) : (
             <button
               onClick={handleAddToCart}
-              disabled={product.stock === 0}
+              disabled={atStockLimit}
               className="w-full py-4 rounded-full text-white font-black flex items-center justify-center gap-2 shadow-xl transition-all active:scale-[.98]"
               style={product.stock === 0
                 ? { background: "#ccc", cursor: "not-allowed" }
@@ -245,20 +276,15 @@ export default function ProductPage() {
       </div>
 
       {/* UPSELL MODAL */}
-      {showUpsell && (
+      {/* {showUpsell && (
         <UpsellModal
           product={product}
           suggestions={upsellProducts}
           onClose={() => setShowUpsell(false)}
           onGoToCart={() => { setShowUpsell(false); setCartOpen(true); }}
         />
-      )}
-      {cartOpen && (
-        <CartDrawer
-          onClose={() => setCartOpen(false)}
-          onCheckout={() => { setCartOpen(false); setCheckoutOpen(true); }}
-        />
-      )}
+      )} */}
+      {cartOpen && <CartDrawer onClose={() => setCartOpen(false)} onCheckout={() => { setCartOpen(false); setCheckoutOpen(true); }} />}
       {checkoutOpen && <CheckoutModal form={checkoutForm} onClose={() => setCheckoutOpen(false)} />}
     </div>
   );

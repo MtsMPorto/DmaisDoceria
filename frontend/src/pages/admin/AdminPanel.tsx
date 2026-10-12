@@ -41,9 +41,18 @@ export default function AdminPanel() {
     return () => setUnauthorizedHandler(null);
   }, [navigate]);
 
-  function logout() {
-    clearSession();
-    navigate("/admin", { replace: true });
+  const [loggingOut, setLoggingOut] = useState(false);
+  const [logoutError, setLogoutError] = useState("");
+  async function logout() {
+    if (loggingOut) return;
+    setLoggingOut(true);
+    setLogoutError("");
+    try {
+      await clearSession();
+      navigate("/admin", { replace: true });
+    } catch {
+      setLogoutError("Não foi possível encerrar a sessão. Verifique sua conexão e tente sair novamente.");
+    } finally { setLoggingOut(false); }
   }
 
   const goToSale = useCallback((saleId: number) => {
@@ -67,12 +76,13 @@ export default function AdminPanel() {
           </div>
           <div className="flex items-center gap-3">
             <a href="/" className="text-white/60 hover:text-white text-xs font-semibold transition-colors">← Ver loja</a>
-            <button onClick={logout} className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-full text-xs font-bold transition-all">
+            <button onClick={logout} disabled={loggingOut} className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-full text-xs font-bold transition-all">
               <LogOut size={14} /> Sair
             </button>
           </div>
         </div>
       </header>
+      {logoutError && <p role="alert" className="p-3 text-red-700 bg-red-50">{logoutError}</p>}
 
       <div className="bg-white border-b border-border shadow-sm sticky top-16 z-30">
         <div className="max-w-7xl mx-auto px-4">
