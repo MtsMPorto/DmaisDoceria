@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { isValidCnpj, isValidCpf, onlyDigits } from "../../shared/utils/document.js";
+import { isValidCnpj, onlyDigits } from "../../shared/utils/document.js";
 
 export const UF_LIST = [
   "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG", "PA",
@@ -31,7 +31,7 @@ const customerSchema = z
   .strictObject({
     type: z.enum(["PF", "PJ"], "Tipo de cliente deve ser PF ou PJ."),
     name: requiredText(120),
-    document: digitsField,
+    document: z.string().max(18).regex(/^[A-Za-z0-9./-]*$/).transform(v => v.replace(/[./-]/g, "").toUpperCase()).default(""),
     phone: digitsField.refine(
       (value) => value.length === 10 || value.length === 11,
       "Telefone deve ter 10 ou 11 dígitos.",
@@ -49,8 +49,8 @@ const customerSchema = z
       .refine((value) => UF_SET.has(value), "UF inválida."),
   })
   .superRefine((customer, ctx) => {
-    if (customer.type === "PF" && !isValidCpf(customer.document)) {
-      ctx.addIssue({ code: "custom", path: ["document"], message: "CPF inválido." });
+    if (customer.type === "PF" && customer.document !== "") {
+      ctx.addIssue({ code: "custom", path: ["document"], message: "Pessoa física não deve informar documento." });
     }
     if (customer.type === "PJ" && !isValidCnpj(customer.document)) {
       ctx.addIssue({ code: "custom", path: ["document"], message: "CNPJ inválido." });

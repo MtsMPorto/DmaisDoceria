@@ -14,7 +14,7 @@ function body(overrides: Record<string, unknown> = {}, customer: Record<string, 
     customer: {
       type: "PF",
       name: "Cliente de Teste",
-      document: "123.456.789-09",
+      document: "",
       phone: "(51) 98209-2567",
       zip: "90000-000",
       street: "Rua Teste",
@@ -32,7 +32,7 @@ function body(overrides: Record<string, unknown> = {}, customer: Record<string, 
 describe("createOrderSchema", () => {
   it("aceita pedido válido e normaliza máscaras, UF e complemento vazio", () => {
     const parsed = createOrderSchema.parse(body({}, { complement: "  " }));
-    assert.equal(parsed.customer.document, VALID_CPF);
+    assert.equal(parsed.customer.document, "");
     assert.equal(parsed.customer.phone, "51982092567");
     assert.equal(parsed.customer.zip, "90000000");
     assert.equal(parsed.customer.state, "RS");
@@ -71,7 +71,7 @@ describe("createOrderSchema", () => {
   });
 
   it("exige bairro e demais campos obrigatórios", () => {
-    for (const field of ["name", "document", "phone", "zip", "street", "streetNumber", "neighborhood", "city", "state"]) {
+    for (const field of ["name", "phone", "zip", "street", "streetNumber", "neighborhood", "city", "state"]) {
       const customer = body().customer as Record<string, unknown>;
       delete customer[field];
       const result = createOrderSchema.safeParse({ ...body(), customer });
@@ -147,7 +147,7 @@ describe("createOrderSchema", () => {
     const result = createOrderSchema.safeParse(body({}, { document: "111.111.111-11" }));
     assert.equal(result.success, false);
     if (!result.success) {
-      assert.ok(result.error.issues.some((issue) => issue.message === "CPF inválido."));
+      assert.ok(result.error.issues.some((issue) => issue.message === "Pessoa física não deve informar documento."));
     }
   });
 });

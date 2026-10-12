@@ -33,7 +33,6 @@ export function SaleModal({ saleId, onClose, onChanged }: { saleId: number; onCl
 
   // Executa uma chamada que devolve a venda atualizada.
   async function run(action: () => Promise<SaleDetail>, confirmText?: string) {
-    if (confirmText && !window.confirm(confirmText)) return;
     setBusy(true);
     setError("");
     try {
@@ -263,46 +262,40 @@ function ItemRow({ item, editable, busy, saleId, onRun }: {
 
 function TotalsSection({ sale, editable, busy, onRun }: { sale: SaleDetail; editable: boolean; busy: boolean; onRun: Runner }) {
   const [discount, setDiscount] = useState(sale.discount);
-  const [fee, setFee] = useState(sale.deliveryFee);
   const [date, setDate] = useState(sale.saleDate);
   const [localError, setLocalError] = useState("");
 
-  useEffect(() => { setDiscount(sale.discount); setFee(sale.deliveryFee); setDate(sale.saleDate); }, [sale.discount, sale.deliveryFee, sale.saleDate]);
+  useEffect(() => { setDiscount(sale.discount); setDate(sale.saleDate); }, [sale.discount, sale.saleDate]);
 
   function save() {
     setLocalError("");
     const discountValue = parseMoneyInput(discount === "" ? "0" : discount);
-    const feeValue = parseMoneyInput(fee === "" ? "0" : fee);
-    if (discountValue === null || feeValue === null) { setLocalError("Valores inválidos (até 2 casas decimais)."); return; }
+    if (discountValue === null) { setLocalError("Valores inválidos (até 2 casas decimais)."); return; }
     if (!date) { setLocalError("Informe a data da venda."); return; }
-    void onRun(() => adminApi.updateSale(sale.id, { discount: discountValue, deliveryFee: feeValue, saleDate: date }));
+    void onRun(() => adminApi.updateSale(sale.id, { discount: discountValue, saleDate: date }));
   }
 
   return (
     <div className="bg-muted/40 rounded-2xl p-4 space-y-3">
       {editable && (
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 gap-3">
           <Field label="Data da venda">
             <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={inputCls} />
           </Field>
           <Field label="Desconto (R$)">
             <input type="text" inputMode="decimal" value={discount} onChange={(e) => setDiscount(e.target.value)} className={inputCls} />
           </Field>
-          <Field label="Frete (R$)">
-            <input type="text" inputMode="decimal" value={fee} onChange={(e) => setFee(e.target.value)} className={inputCls} />
-          </Field>
         </div>
       )}
       {editable && (
         <button onClick={save} disabled={busy} className="text-xs font-bold text-primary border border-primary/30 hover:bg-primary/5 rounded-lg px-3 py-1.5">
-          Aplicar desconto, frete e data
+          Aplicar desconto e data
         </button>
       )}
       <FormError message={localError} />
       <dl className="text-sm space-y-1">
         <div className="flex justify-between"><dt className="text-muted-foreground">Subtotal</dt><dd className="tabular-nums">{brl(sale.subtotal)}</dd></div>
         <div className="flex justify-between"><dt className="text-muted-foreground">Desconto</dt><dd className="tabular-nums text-green-600">− {brl(sale.discount)}</dd></div>
-        <div className="flex justify-between"><dt className="text-muted-foreground">Frete</dt><dd className="tabular-nums">+ {brl(sale.deliveryFee)}</dd></div>
         <div className="flex justify-between border-t border-border pt-1.5 text-base"><dt className="font-black text-primary">Total</dt><dd className="font-black text-primary tabular-nums">{brl(sale.total)}</dd></div>
         <div className="flex justify-between"><dt className="text-muted-foreground">Recebido</dt><dd className="tabular-nums">{brl(sale.paidAmount)}</dd></div>
         <div className="flex justify-between"><dt className="text-muted-foreground">Pendente</dt><dd className="tabular-nums text-amber-600 font-bold">{brl(sale.pendingAmount)}</dd></div>

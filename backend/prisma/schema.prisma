@@ -8,6 +8,39 @@ datasource db {
   provider = "postgresql"
 }
 
+model CustomerAccount {
+  id             Int @id @default(autoincrement())
+  email          String @unique @db.VarChar(150)
+  passwordHash   String @map("password_hash")
+  customerId     Int? @unique @map("customer_id")
+  customer       Customer? @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  pendingProfile Json? @map("pending_profile")
+  verifiedAt     DateTime? @map("verified_at")
+  sessionVersion Int @default(0) @map("session_version")
+  failedAttempts Int @default(0) @map("failed_attempts")
+  lockedUntil    DateTime? @map("locked_until")
+  createdAt      DateTime @default(now()) @map("created_at")
+  challenges     AccountChallenge[]
+  @@map("customer_accounts")
+}
+
+model AccountChallenge {
+  id         String @id @db.Uuid
+  accountId  Int @map("account_id")
+  account    CustomerAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  purpose    String
+  email      String @db.VarChar(150)
+  codeHash   String @map("code_hash")
+  attempts   Int @default(0)
+  createdAt  DateTime @default(now()) @map("created_at")
+  expiresAt  DateTime @map("expires_at")
+  verifiedAt DateTime? @map("verified_at")
+  resetHash  String? @unique @map("reset_hash")
+  @@unique([accountId, purpose])
+  @@index([expiresAt])
+  @@map("account_challenges")
+}
+
 model Category {
   id        Int       @id @default(autoincrement())
   name      String    @unique
@@ -34,7 +67,10 @@ model Product {
   minQty          Int               @default(1) @map("min_qty")
   stock           Int               @default(0)
   active          Boolean           @default(true)
+  bestSeller      Boolean           @default(false) @map("best_seller")
+  featured        Boolean           @default(false)
   stars           Int               @default(5)
+  archivedAt      DateTime?         @map("archived_at")
   deletedAt       DateTime?         @map("deleted_at")
   createdAt       DateTime          @default(dbgenerated("timezone('UTC'::text, now())")) @map("created_at")
   updatedAt       DateTime          @default(dbgenerated("timezone('UTC'::text, now())")) @updatedAt @map("updated_at")
@@ -104,6 +140,7 @@ model Customer {
   updatedAt       DateTime     @default(dbgenerated("timezone('UTC'::text, now())")) @updatedAt @map("updated_at")
   orders          Order[]
   sales           Sale[]
+  account         CustomerAccount?
 
   @@index([name])
   @@index([phone])
@@ -117,7 +154,7 @@ model Order {
   customerId   Int?         @map("customer_id")
   customerType CustomerType @map("customer_type")
   customerName String       @map("customer_name")
-  document     String       @db.VarChar(14)
+  document     String?      @db.VarChar(14)
   phone        String       @db.VarChar(15)
   zip          String       @db.VarChar(8)
   street       String

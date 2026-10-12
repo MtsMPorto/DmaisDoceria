@@ -48,3 +48,7 @@ export async function updateFlavor(req: Request, res: Response): Promise<void> {
   const flavorId = idParamSchema.parse(req.params.flavorId);
   res.json(await service.updateFlavor(productId, flavorId, updateFlavorSchema.parse(req.body)));
 }
+
+export async function remove(req: Request, res: Response): Promise<void> {
+  res.json(await service.remove(idParamSchema.parse(req.params.id)));
+}

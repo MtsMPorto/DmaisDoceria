@@ -30,6 +30,20 @@ describe("moneySchema", () => {
 });
 
 describe("createProductSchema", () => {
+  it("permite selecionar mais vendidos independentemente de destaque e estrelas", () => {
+    assert.equal(createProductSchema.parse(base).bestSeller, false);
+    const product = createProductSchema.parse({ ...base, bestSeller: true, featured: false, stars: 1 });
+    assert.equal(product.bestSeller, true);
+    assert.equal(product.featured, false);
+    assert.deepEqual(updateProductSchema.parse({ bestSeller: false }), { bestSeller: false });
+    assert.equal(updateProductSchema.safeParse({ bestSeller: "true" }).success, false);
+  });
+  it("controla destaque independentemente das estrelas e permite desmarcar", () => {
+    assert.equal(createProductSchema.parse(base).featured, false);
+    assert.equal(createProductSchema.parse({ ...base, stars: 5, featured: true }).featured, true);
+    assert.deepEqual(updateProductSchema.parse({ featured: false }), { featured: false });
+    assert.equal(updateProductSchema.safeParse({ featured: "true" }).success, false);
+  });
   it("aplica padrões (mínimo 1, 5 estrelas, ativo, saldo 0, sem sabores)", () => {
     const parsed = createProductSchema.parse(base);
     assert.equal(parsed.price, "10.50");

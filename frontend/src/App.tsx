@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { RouterProvider } from "react-router";
 import { router } from "./routes";
 import { ProductsProvider } from "@/contexts/ProductsContext";
+import { AccountProvider } from "@/contexts/AccountContext";
 import { CartProvider } from "@/contexts/CartContext";
 
 export default function App() {
@@ -27,7 +28,7 @@ export default function App() {
   return (
     <ProductsProvider>
       <CartProvider>
-        <RouterProvider router={router} />
+        <AccountProvider><RouterProvider router={router} /></AccountProvider>
       </CartProvider>
     </ProductsProvider>
   );

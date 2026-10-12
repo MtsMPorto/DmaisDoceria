@@ -26,11 +26,12 @@ export function toReceipt(order: OrderReceipt) {
 
 export async function createOrder(
   input: CreateOrderInput,
+  customerId: number,
 ): Promise<{ created: boolean; order: ReturnType<typeof toReceipt> }> {
   const { requestId, customer } = input;
 
   if (requestId) {
-    const existing = await repository.findReceiptByRequestId(requestId);
+    const existing = await repository.findReceiptByRequestId(requestId, customerId);
     if (existing) return { created: false, order: toReceipt(existing) };
   }
 
@@ -53,14 +54,14 @@ export async function createOrder(
   }
 
   try {
-    const { id } = await repository.createWithItems({ requestId, customer, lines });
+    const { id } = await repository.createWithItems({ requestId, customer, customerId, lines });
     const receipt = await repository.findReceiptById(id);
     if (!receipt) throw new AppError(500, "ORDER_READ_FAILED", "Pedido registrado, mas não foi possível lê-lo.");
     return { created: true, order: toReceipt(receipt) };
   } catch (err) {
     // Duas requisições com o mesmo requestId chegando ao mesmo tempo.
     if (requestId && repository.isUniqueViolation(err)) {
-      const existing = await repository.findReceiptByRequestId(requestId);
+      const existing = await repository.findReceiptByRequestId(requestId, customerId);
       if (existing) return { created: false, order: toReceipt(existing) };
     }
     throw err;
@@ -119,7 +120,7 @@ export async function getOrder(id: number) {
     customer: {
       type: order.customerType,
       name: order.customerName,
-      document: order.document,
+      document: order.customerType === "PF" ? null : order.document,
       phone: order.phone,
       zip: order.zip,
       street: order.street,

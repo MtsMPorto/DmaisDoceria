@@ -127,6 +127,7 @@ export function findOrderForSale(orderId: number) {
       id: true,
       status: true,
       customerType: true,
+      customerId: true,
       customerName: true,
       document: true,
       phone: true,
@@ -159,10 +160,10 @@ type OrderForSale = NonNullable<Awaited<ReturnType<typeof findOrderForSale>>>;
 // mesma transação.
 export function createSaleFromOrder(adminId: number, order: OrderForSale) {
   return prisma.$transaction(async (tx) => {
-    let customer = await tx.customer.findUnique({
-      where: { document: order.document },
+    let customer = order.customerId || order.document ? await tx.customer.findUnique({
+      where: order.customerId ? { id: order.customerId } : { document: order.document! },
       select: { id: true, type: true, active: true },
-    });
+    }) : null;
 
     if (customer && customer.type !== order.customerType) {
       return { conflict: "TYPE_MISMATCH" as const };

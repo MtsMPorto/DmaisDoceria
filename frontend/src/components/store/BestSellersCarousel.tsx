@@ -39,7 +39,7 @@ export function BestSellersCarousel({
           {/* Header row */}
           <div className="flex items-center justify-between mb-6">
             <div>
-              <p className="text-white/60 text-[10px] font-black uppercase tracking-widest mb-0.5">⭐ Top produtos</p>
+              <p className="text-white/60 text-[10px] font-black uppercase tracking-widest mb-0.5">{/* ⭐ */}Top produtos</p>
               <h2 className="text-white font-black text-2xl sm:text-3xl" style={{ fontFamily: "'Baloo 2', cursive" }}>
                 Mais Vendidos
               </h2>

@@ -27,3 +27,6 @@ Thumbs.db
 # Configuração local do Claude Code
 .claude/settings.local.json
 .claude/
+
+# Certificados locais
+backend/certs/

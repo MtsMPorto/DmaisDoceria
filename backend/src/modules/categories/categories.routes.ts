@@ -10,3 +10,4 @@ adminCategoryRoutes.use(requireAuth);
 adminCategoryRoutes.get("/", controller.listAdmin);
 adminCategoryRoutes.post("/", controller.create);
 adminCategoryRoutes.patch("/:id", controller.update);
+adminCategoryRoutes.delete("/:id", controller.remove);

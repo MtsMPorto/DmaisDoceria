@@ -1,5 +1,6 @@
 import { prisma } from "../../config/prisma.js";
 import { Prisma } from "../../generated/prisma/client.js";
+import { AppError } from "../../shared/utils/errors.js";
 import type { CreateCustomerInput, ListCustomersQuery, UpdateCustomerInput } from "./customers.schema.js";
 
 export const customerSelect = {
@@ -71,8 +72,20 @@ export function create(input: CreateCustomerInput) {
   return prisma.customer.create({ data: { ...input, code: "" }, select: customerSelect });
 }
 
-export function update(id: number, input: UpdateCustomerInput) {
-  return prisma.customer.update({ where: { id }, data: input, select: customerSelect });
+export async function update(id: number, input: UpdateCustomerInput) {
+  return prisma.$transaction(async tx => {
+    const account = await tx.customerAccount.findUnique({where:{customerId:id}});
+    if (account) {
+      await tx.$queryRaw`SELECT id FROM public.customer_accounts WHERE id = ${account.id} FOR UPDATE`;
+      const current = await tx.customer.findUniqueOrThrow({where:{id}});
+      if ((input.email !== undefined && input.email?.trim().toLowerCase() !== current.email?.trim().toLowerCase()) ||
+          (input.type !== undefined && input.type !== current.type) ||
+          (current.type === "PJ" && input.document !== undefined && input.document !== current.document)) {
+        throw new AppError(409,"ACCOUNT_IDENTITY","Cliente com conta no site: a troca de e-mail deve ser verificada pela própria conta. Tipo e CNPJ não podem ser alterados aqui.");
+      }
+    }
+    return tx.customer.update({where:{id},data:input,select:customerSelect});
+  });
 }
 
 export interface CustomerStatsRow {

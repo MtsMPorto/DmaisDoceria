@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Loader2, Save } from "lucide-react";
 import { Field } from "@/components/ui/Field";
 import { FormError, Modal } from "@/components/ui/Modal";
-import { isValidCnpj, isValidCpf, isValidUf, onlyDigits } from "@/lib/document";
+import { isValidCnpj, isValidUf, onlyDigits } from "@/lib/document";
 import { formatCEP, formatDocument, formatPhone } from "@/lib/format";
 import { errorMessage } from "@/services/api";
 import { adminApi, type CustomerPayload } from "@/services/endpoints";
@@ -39,9 +39,8 @@ export function CustomerFormModal({ customer, onSaved, onClose }: {
     const next: Record<string, string> = {};
     if (!name.trim()) next.name = "Informe o nome.";
 
-    const documentDigits = onlyDigits(document);
+    const documentDigits = type === "PJ" ? document.replace(/[./-]/g, "").toUpperCase() : "";
     if (documentDigits) {
-      if (type === "PF" && !isValidCpf(documentDigits)) next.document = "CPF inválido.";
       if (type === "PJ" && !isValidCnpj(documentDigits)) next.document = "CNPJ inválido.";
     }
 
@@ -132,10 +131,10 @@ export function CustomerFormModal({ customer, onSaved, onClose }: {
       )}
 
       <div className="grid grid-cols-2 gap-3">
-        <Field label={type === "PF" ? "CPF (opcional)" : "CNPJ (opcional)"} error={errors.document}>
-          <input type="text" inputMode="numeric" placeholder={type === "PF" ? "000.000.000-00" : "00.000.000/0000-00"} value={document}
-            onChange={(e) => setDocument(formatDocument(e.target.value, type === "PF" ? "fisica" : "juridica"))} className={inputCls} />
-        </Field>
+        {type === "PJ" && <Field label="CNPJ (opcional)" error={errors.document}>
+          <input type="text" maxLength={18} placeholder="00.000.000/0000-00" value={document}
+            onChange={(e) => setDocument(formatDocument(e.target.value, "juridica"))} className={inputCls} />
+        </Field>}
         <Field label="Telefone / WhatsApp *" error={errors.phone}>
           <input type="tel" placeholder="(51) 99999-9999" value={phone} onChange={(e) => setPhone(formatPhone(e.target.value))} className={inputCls} />
         </Field>

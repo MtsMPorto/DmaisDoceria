@@ -1,9 +1,10 @@
-import { useState } from "react";
-import { Archive, DollarSign, Image as ImageIcon, Layers, Loader2, Pencil, Plus, Save, Star, Tag, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Archive, DollarSign, Image as ImageIcon, Layers, Loader2, Pencil, Plus, Save, X } from "lucide-react";
+// import { Star } from "lucide-react";
 import { Field } from "@/components/ui/Field";
 import { inputCls } from "@/components/admin/customers/inputCls";
 import { parseMoneyInput } from "@/lib/money";
-import { errorMessage } from "@/services/api";
+import { api, errorMessage } from "@/services/api";
 import { adminApi, type ProductPayload } from "@/services/endpoints";
 import type { AdminCategory, AdminFlavor, AdminProduct } from "@/types/api";
 
@@ -24,11 +25,20 @@ export function ProductFormModal({ mode, product, categories, onSaved, onClose }
   const [brand, setBrand] = useState(product?.brand ?? "");
   const [description, setDescription] = useState(product?.description ?? "");
   const [imageUrl, setImageUrl] = useState(product?.imageUrl ?? "");
-  const [price, setPrice] = useState(product?.price ?? "");
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState("");
+  useEffect(() => {
+    if (!imageFile) { setImagePreview(""); return; }
+    const url = URL.createObjectURL(imageFile);
+    setImagePreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [imageFile]);
   const [cost, setCost] = useState(product?.cost ?? "");
   const [unit, setUnit] = useState(product?.unit ?? "");
   const [minQty, setMinQty] = useState(String(product?.minQty ?? 1));
   const [categoryId, setCategoryId] = useState<number | "">(product?.categoryId ?? activeCategories[0]?.id ?? "");
+  const [bestSeller, setBestSeller] = useState(product?.bestSeller ?? false);
+  const [featured, setFeatured] = useState(product?.featured ?? false);
   const [stars, setStars] = useState(product?.stars ?? 5);
   const [active, setActive] = useState(product?.active ?? true);
   const [initialStock, setInitialStock] = useState("0");
@@ -43,6 +53,7 @@ export function ProductFormModal({ mode, product, categories, onSaved, onClose }
   const [changed, setChanged] = useState(false);
 
   function close() {
+    if (saving) return;
     if (changed) onSaved();
     onClose();
   }
@@ -52,8 +63,6 @@ export function ProductFormModal({ mode, product, categories, onSaved, onClose }
     if (!name.trim()) next.name = "Informe o nome.";
     if (!brand.trim()) next.brand = "Informe a marca.";
     if (!unit.trim()) next.unit = "Informe a unidade.";
-    const priceValue = parseMoneyInput(String(price));
-    if (priceValue === null) next.price = "Preço inválido (use até 2 casas).";
     const costText = String(cost).trim();
     const costValue = costText === "" ? null : parseMoneyInput(costText);
     if (costText !== "" && costValue === null) next.cost = "Custo inválido.";
@@ -65,7 +74,7 @@ export function ProductFormModal({ mode, product, categories, onSaved, onClose }
       if (!Number.isInteger(stock) || stock < 0) next.initialStock = "Saldo inicial inválido.";
     }
     setErrors(next);
-    if (Object.keys(next).length > 0 || priceValue === null || categoryId === "") return null;
+    if (Object.keys(next).length > 0 || categoryId === "") return null;
 
     return {
       name: name.trim(),
@@ -73,22 +82,31 @@ export function ProductFormModal({ mode, product, categories, onSaved, onClose }
       description: description.trim() || null,
       imageUrl: imageUrl.trim() || null,
       categoryId,
-      price: priceValue,
+      price: product?.price ?? "0.00",
       cost: costValue,
       unit: unit.trim(),
       minQty: min,
+      bestSeller,
+      featured,
       stars,
       active,
     };
   }
 
   async function handleSave() {
+    if (saving) return;
     setFormError("");
     const payload = validate();
     if (!payload) return;
 
     setSaving(true);
     try {
+      if (imageFile) {
+        const uploaded = await api<{ imageUrl: string }>("/api/admin/products/image", { method: "POST", rawBody: imageFile, auth: true });
+        payload.imageUrl = uploaded.imageUrl;
+        setImageUrl(uploaded.imageUrl);
+        setImageFile(null);
+      }
       if (mode === "add") {
         await adminApi.createProduct({
           ...payload,
@@ -157,17 +175,29 @@ export function ProductFormModal({ mode, product, categories, onSaved, onClose }
         </div>
 
         <div className="overflow-y-auto p-5 space-y-4 flex-1">
-          {imageUrl && (
-            <img src={imageUrl} alt="Pré-visualização" className="w-full h-40 object-cover rounded-2xl bg-secondary"
+          {(imagePreview || imageUrl) && (
+            <img key={imagePreview || imageUrl} src={imagePreview || imageUrl} alt="Pré-visualização" className="w-full h-40 object-cover rounded-2xl bg-secondary"
               onError={(event) => { event.currentTarget.style.display = "none"; }} />
           )}
 
-          <Field label="URL da Imagem" error={errors.imageUrl}>
-            <div className="relative">
-              <ImageIcon size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <input type="text" placeholder="https://..." value={imageUrl} onChange={(e) => setImageUrl(e.target.value)}
-                className={`${inputCls} pl-9`} />
-            </div>
+          <Field label="Imagem do produto" error={errors.imageUrl}>
+            <label className={`${inputCls} flex items-center justify-center gap-2 cursor-pointer`}>
+              <ImageIcon size={16} /> {imageFile ? "Trocar imagem selecionada" : "Escolher imagem"}
+              <input type="file" accept="image/jpeg,image/png,image/webp" disabled={saving} className="sr-only"
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  event.target.value = "";
+                  if (!file) return;
+                  if (!["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size > 5 * 1024 * 1024 || file.size === 0) {
+                    setErrors(current => ({ ...current, imageUrl: "Escolha uma imagem JPG, PNG ou WebP de até 5 MB." }));
+                    return;
+                  }
+                  setErrors(current => ({ ...current, imageUrl: "" }));
+                  setImageFile(file);
+                }} />
+            </label>
+            <p className="text-xs text-muted-foreground mt-2 break-all">{imageFile?.name || "JPG, PNG ou WebP · até 5 MB"}</p>
+            {(imageFile || imageUrl) && <button type="button" disabled={saving} className="text-xs text-red-600 mt-2" onClick={() => { setImageFile(null); setImageUrl(""); }}>Remover imagem</button>}
           </Field>
 
           <div className="grid grid-cols-2 gap-3">
@@ -185,12 +215,6 @@ export function ProductFormModal({ mode, product, categories, onSaved, onClose }
           </Field>
 
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Preço (R$) *" error={errors.price}>
-              <div className="relative">
-                <Tag size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                <input type="text" inputMode="decimal" placeholder="0,00" value={price} onChange={(e) => setPrice(e.target.value)} className={`${inputCls} pl-9`} />
-              </div>
-            </Field>
             <Field label="Custo (R$)" error={errors.cost}>
               <div className="relative">
                 <DollarSign size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -213,14 +237,15 @@ export function ProductFormModal({ mode, product, categories, onSaved, onClose }
                 </select>
               </div>
             </Field>
-            <Field label="Estrelas">
+            {/* Avaliações desativadas; o valor existente é preservado no cadastro. */}
+            {/* <Field label="Estrelas">
               <div className="relative">
                 <Star size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                 <select value={stars} onChange={(e) => setStars(Number(e.target.value))} className={`${inputCls} pl-9`}>
                   {[5, 4, 3, 2, 1].map((value) => <option key={value} value={value}>{value}</option>)}
                 </select>
               </div>
-            </Field>
+            </Field> */}
           </div>
 
           {mode === "add" ? (
@@ -269,11 +294,22 @@ export function ProductFormModal({ mode, product, categories, onSaved, onClose }
             )}
           </div>
 
+            <label className="flex items-center gap-3 bg-muted/40 rounded-xl px-4 py-3 text-sm font-bold text-primary">
+              <input type="checkbox" checked={featured} onChange={(event) => setFeatured(event.target.checked)} className="h-4 w-4 accent-primary" />
+              Exibir nos Destaques da Semana
+            </label>
+
+          <label className="flex items-center gap-3 bg-muted/40 rounded-xl px-4 py-3 text-sm font-bold text-primary">
+            <input type="checkbox" checked={bestSeller} onChange={(event) => setBestSeller(event.target.checked)} className="h-4 w-4 accent-primary" />
+            Exibir nos Mais Vendidos
+          </label>
+
           <div className="flex items-center justify-between bg-muted/40 rounded-xl px-4 py-3">
             <div>
               <p className="text-primary font-bold text-sm">Produto Ativo</p>
               <p className="text-muted-foreground text-xs">Visível na loja para os clientes</p>
             </div>
+
             <button onClick={() => setActive((value) => !value)} aria-pressed={active}
               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${active ? "bg-green-500" : "bg-gray-300"}`}>
               <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${active ? "translate-x-6" : "translate-x-1"}`} />

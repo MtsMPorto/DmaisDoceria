@@ -1,6 +1,8 @@
-import type { RefObject } from "react";
+import { useEffect, useState, type RefObject } from "react";
 import { Link } from "react-router";
-import { Search, ShoppingCart, X, Settings } from "lucide-react";
+import { fetchMe, isAuthenticated } from "@/services/authService";
+import { useAccount } from "@/contexts/AccountContext";
+import { Search, ShoppingCart, X, UserRound, Settings } from "lucide-react";
 import logoImg from "@/assets/images/Logo_Doces-removebg-preview__1_.png";
 
 export function StoreHeader({
@@ -18,6 +20,30 @@ export function StoreHeader({
   onOpenCart: () => void;
   totalItems: number;
 }) {
+  const { openAccount } = useAccount();
+  const [adminLoggedIn, setAdminLoggedIn] = useState(isAuthenticated);
+  useEffect(() => {
+    let active = true;
+    async function checkAdmin() {
+      if (!isAuthenticated()) {
+        if (active) setAdminLoggedIn(false);
+        return;
+      }
+      try {
+        await fetchMe();
+        if (active) setAdminLoggedIn(true);
+      } catch {
+        // A network failure does not end the session; a 401 clears it in api.ts.
+        if (active) setAdminLoggedIn(isAuthenticated());
+      }
+    }
+    void checkAdmin();
+    window.addEventListener("focus", checkAdmin);
+    return () => {
+      active = false;
+      window.removeEventListener("focus", checkAdmin);
+    };
+  }, []);
   return (
       <header className="absolute top-0 left-0 right-0 z-40" style={{ background: "transparent" }}>
         <div className="max-w-7xl mx-auto px-4 grid items-center" style={{ gridTemplateColumns: "1fr auto 1fr", height: "calc(4rem + max(env(safe-area-inset-top, 0px), var(--sat-fallback, 0px)))", paddingTop: "max(env(safe-area-inset-top, 0px), var(--sat-fallback, 0px))" }}>
@@ -47,9 +73,15 @@ export function StoreHeader({
                 <span className="absolute -top-1.5 -right-1.5 bg-white text-xs font-black w-5 h-5 rounded-full flex items-center justify-center" style={{ color: "#27408A" }}>{totalItems}</span>
               )}
             </button>
-            <Link to="/admin" className="w-8 h-8 rounded-full flex items-center justify-center transition-colors" style={{ background: "rgba(255,255,255,0.10)" }} title="Painel Admin">
-              <Settings size={15} className="text-white/60" />
-            </Link>
+            {adminLoggedIn ? (
+              <Link to="/admin/panel" className="w-8 h-8 rounded-full flex items-center justify-center transition-colors" style={{ background: "rgba(255,255,255,0.10)" }} title="Painel Admin" aria-label="Abrir painel de administração">
+                <Settings size={15} className="text-white/60" />
+              </Link>
+            ) : (
+            <button onClick={openAccount} type="button" className="w-8 h-8 rounded-full flex items-center justify-center transition-colors" style={{ background: "rgba(255,255,255,0.10)" }} title="Minha conta" aria-label="Minha conta">
+              <UserRound size={15} className="text-white/60" />
+            </button>
+            )}
           </div>
         </div>
       </header>

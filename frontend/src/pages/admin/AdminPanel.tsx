@@ -1,17 +1,20 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router";
-import { BarChart2, ClipboardList, Inbox, LogOut, MessageSquare, Package, Receipt, Users } from "lucide-react";
+import { Inbox, LogOut, Package, Receipt, Users } from "lucide-react";
+// import { MessageSquare } from "lucide-react";
+// import { BarChart2, ClipboardList } from "lucide-react";
 import logoImg from "@/assets/images/Logo_Doces-removebg-preview__1_.png";
-import { SHOW_QUOTES } from "@/config/features";
+// import { SHOW_QUOTES } from "@/config/features";
 import { setUnauthorizedHandler } from "@/services/api";
 import { logout as clearSession } from "@/services/authService";
 import AdminCustomers from "./customers/AdminCustomers";
 import AdminOrders from "./orders/AdminOrders";
 import AdminProducts from "./products/AdminProducts";
-import AdminQuotes from "./quotes/AdminQuotes";
-import AdminReports from "./reports/AdminReports";
+// Seções temporariamente desativadas; código preservado para reativação.
+// import AdminQuotes from "./quotes/AdminQuotes";
+// import AdminReports from "./reports/AdminReports";
 import AdminSales from "./sales/AdminSales";
-import AdminTestimonials from "./testimonials/AdminTestimonials";
+// import AdminTestimonials from "./testimonials/AdminTestimonials";
 
 type Section = "produtos" | "solicitacoes" | "clientes" | "vendas" | "relatorios" | "depoimentos" | "orcamentos";
 
@@ -20,9 +23,9 @@ const TABS: { key: Section; label: string; icon: typeof Package }[] = [
   { key: "solicitacoes", label: "Solicitações", icon: Inbox },
   { key: "clientes", label: "Clientes", icon: Users },
   { key: "vendas", label: "Vendas", icon: Receipt },
-  { key: "relatorios", label: "Relatórios", icon: BarChart2 },
-  { key: "depoimentos", label: "Depoimentos", icon: MessageSquare },
-  ...(SHOW_QUOTES ? [{ key: "orcamentos" as const, label: "Orçamentos", icon: ClipboardList }] : []),
+  // { key: "relatorios", label: "Relatórios", icon: BarChart2 },
+  // { key: "depoimentos", label: "Depoimentos", icon: MessageSquare },
+  // ...(SHOW_QUOTES ? [{ key: "orcamentos" as const, label: "Orçamentos", icon: ClipboardList }] : []),
 ];
 
 export default function AdminPanel() {
@@ -101,9 +104,9 @@ export default function AdminPanel() {
             onNewSaleHandled={clearNewSale}
           />
         )}
-        {section === "relatorios" && <AdminReports />}
-        {section === "depoimentos" && <AdminTestimonials />}
-        {SHOW_QUOTES && section === "orcamentos" && <AdminQuotes />}
+        {/* {section === "relatorios" && <AdminReports />} */}
+        {/* {section === "depoimentos" && <AdminTestimonials />} */}
+        {/* {SHOW_QUOTES && section === "orcamentos" && <AdminQuotes />} */}
       </div>
     </div>
   );

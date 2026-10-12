@@ -7,6 +7,8 @@ export interface Product {
   minQty: number;
   image: string;
   category: string;
+  bestSeller: boolean;
+  featured: boolean;
   stars: number;
   stock: number;
   flavors?: string[];

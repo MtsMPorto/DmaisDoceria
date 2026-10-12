@@ -16,6 +16,8 @@ const publicSelect = {
   unitDescription: true,
   minQty: true,
   stock: true,
+  bestSeller: true,
+  featured: true,
   stars: true,
   flavors: { where: { active: true }, orderBy: { id: "asc" }, select: { id: true, name: true } },
 } satisfies Prisma.ProductSelect;
@@ -34,6 +36,8 @@ const adminSelect = {
   unitDescription: true,
   minQty: true,
   stock: true,
+  bestSeller: true,
+  featured: true,
   stars: true,
   active: true,
   deletedAt: true,
@@ -45,6 +49,7 @@ const adminSelect = {
 const visibleInStore = {
   active: true,
   deletedAt: null,
+  archivedAt: null,
   category: { active: true },
 } satisfies Prisma.ProductWhereInput;
 
@@ -64,11 +69,11 @@ export function findPublicById(id: number) {
 }
 
 export function listAdmin() {
-  return prisma.product.findMany({ orderBy: [{ name: "asc" }], select: adminSelect });
+  return prisma.product.findMany({ where: { archivedAt: null }, orderBy: [{ name: "asc" }], select: adminSelect });
 }
 
 export function findAdminById(id: number) {
-  return prisma.product.findUnique({ where: { id }, select: adminSelect });
+  return prisma.product.findFirst({ where: { id, archivedAt: null }, select: adminSelect });
 }
 
 export async function categoryExists(id: number): Promise<boolean> {
@@ -136,4 +141,8 @@ export function updateFlavor(flavorId: number, input: UpdateFlavorInput) {
     data: input,
     select: { id: true, name: true, active: true },
   });
+}
+
+export function remove(id: number) {
+  return prisma.product.update({ where: { id }, data: { active: false, deletedAt: new Date(), archivedAt: new Date() }, select: { id: true } });
 }

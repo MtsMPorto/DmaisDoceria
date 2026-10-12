@@ -137,7 +137,6 @@ function OrderModal({ id, onClose, onChanged, onOpenSale }: {
   }
 
   async function cancel() {
-    if (!window.confirm("Cancelar esta solicitação?")) return;
     setBusy(true);
     setError("");
     try {
@@ -188,7 +187,7 @@ function OrderModal({ id, onClose, onChanged, onOpenSale }: {
                 <p className="text-muted-foreground text-[10px] font-bold uppercase">Cliente</p>
                 <p className="text-primary font-black">{order.customer.name}</p>
                 <p className="text-xs text-muted-foreground">
-                  {order.customer.type === "PF" ? "CPF" : "CNPJ"} {formatDocument(order.customer.document, order.customer.type === "PF" ? "fisica" : "juridica")}
+                  {order.customer.type === "PJ" ? `CNPJ ${formatDocument(order.customer.document || "", "juridica")}` : "Pessoa Física"}
                 </p>
                 <p className="text-xs text-muted-foreground">{formatPhone(order.customer.phone)}</p>
               </div>

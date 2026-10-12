@@ -7,7 +7,7 @@ import { useCheckoutForm } from "@/hooks/useCheckoutForm";
 import logoImg from "@/assets/images/Logo_Doces-removebg-preview__1_.png";
 import { useProducts } from "@/contexts/ProductsContext";
 import { useCart } from "@/contexts/CartContext";
-import { Stars } from "@/components/ui/Stars";
+// import { Stars } from "@/components/ui/Stars";
 import { WaIcon } from "@/components/ui/WaIcon";
 import { StockBadge } from "@/components/store/StockBadge";
 import { UpsellModal } from "@/components/store/UpsellModal";
@@ -138,7 +138,8 @@ export default function ProductPage() {
               {product.name}
             </h1>
             <div className="flex items-center gap-3 flex-wrap">
-              <Stars count={product.stars} size={14} />
+              {/* Avaliações desativadas nesta versão. */}
+              {/* <Stars count={product.stars} size={14} /> */}
               <StockBadge stock={product.stock} />
             </div>
           </div>

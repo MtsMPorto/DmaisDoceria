@@ -1,0 +1,319 @@
+.account-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(12, 22, 52, 0.62);
+  backdrop-filter: blur(5px);
+  font-family: "Nunito", sans-serif;
+  color: #293b5b;
+}
+.account-modal {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  max-height: calc(100dvh - 32px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  background: white;
+  border-radius: 30px;
+  padding: 28px 25px 24px;
+  box-shadow: 0 20px 70px #0002;
+  min-width: 0;
+  scrollbar-width: none;
+}
+.account-modal::-webkit-scrollbar {
+  display: none;
+}
+.account-modal:before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 7px;
+  background: linear-gradient(90deg, #2c418f, #ff780c);
+}
+.account-modal * {
+  box-sizing: border-box;
+  min-width: 0;
+}
+.account-modal button {
+  cursor: pointer;
+}
+.account-modal button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+.account-tools {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  color: #8ca0be;
+}
+.account-tools button {
+  background: none;
+  border: 0;
+  padding: 5px;
+  color: inherit;
+}
+.account-tools button:last-child {
+  margin-left: auto;
+}
+.account-title {
+  text-align: center;
+  font-family: "Baloo 2", cursive;
+  font-weight: 800;
+  font-size: 26px;
+  line-height: 1.25;
+  color: #2c418f;
+  margin: 0 0 4px;
+}
+.account-subtitle {
+  text-align: center;
+  color: #6b81a4;
+  font-size: 15px;
+  margin: 0 0 16px;
+  overflow-wrap: anywhere;
+}
+.account-logo {
+  width: 76px;
+  height: 76px;
+  object-fit: contain;
+  margin: 0 auto 14px;
+  display: block;
+}
+.account-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.account-field {
+  display: block;
+  flex: 1;
+  min-width: 0;
+  color: #6b7f9f;
+  font-weight: 700;
+  font-size: 14px;
+}
+.account-field > span {
+  display: block;
+  margin-bottom: 5px;
+}
+.account-input {
+  display: flex;
+  align-items: center;
+  position: relative;
+  width: 100%;
+  background: #f7f9fb;
+  border: 1px solid #dce4ef;
+  border-radius: 18px;
+  overflow: hidden;
+}
+.account-input:focus-within {
+  outline: 2px solid #2c418f;
+  outline-offset: 1px;
+}
+.account-input > svg {
+  margin-left: 15px;
+  flex-shrink: 0;
+  color: #8da3c1;
+}
+.account-input input,
+.account-input select {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  padding: 14px 16px;
+  font:
+    400 17px "Nunito",
+    sans-serif;
+  color: #29364e;
+  box-shadow: none;
+}
+.account-input input::placeholder {
+  color: #90a4c2;
+}
+.account-input input:disabled {
+  opacity: 0.7;
+}
+.account-input button {
+  padding: 12px;
+  border: 0;
+  background: none;
+  color: #8da3c1;
+  flex-shrink: 0;
+}
+.account-input:has([aria-invalid="true"]) {
+  border-color: #c33;
+}
+.account-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 14px;
+}
+.account-row-address {
+  grid-template-columns: minmax(0, 1fr) 100px;
+}
+.account-primary,
+.account-outline {
+  width: 100%;
+  border: 0;
+  background: #2c418f;
+  color: white;
+  font-weight: 800;
+  font-size: 18px;
+  border-radius: 18px;
+  padding: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.account-outline {
+  background: white;
+  color: #2c418f;
+  border: 2px solid #2c418f;
+}
+.account-muted {
+  border: 1px solid #dce4ef;
+  color: #6b7f9f;
+}
+.account-links {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+}
+.account-link {
+  background: none;
+  border: 0;
+  color: #2c418f;
+  font-size: 16px;
+  font-weight: 700;
+  padding: 0;
+  text-align: left;
+}
+.account-back {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #6b81a4;
+  margin-top: 18px;
+  font-size: 14px;
+}
+.account-tabs {
+  display: flex;
+  background: #f1f4f8;
+  border-radius: 18px;
+  padding: 3px;
+  margin-bottom: 20px;
+}
+.account-tabs button {
+  flex: 1;
+  border: 0;
+  background: none;
+  color: #6b7f9f;
+  border-radius: 15px;
+  padding: 10px 4px;
+  font-size: 14px;
+  font-weight: 700;
+}
+.account-tabs button[aria-selected="true"] {
+  background: #fff;
+  color: #29364e;
+  box-shadow: 0 1px 3px #bbc4d3;
+}
+.account-divider {
+  border-top: 1px dashed #dce4ef;
+  padding-top: 16px;
+  color: #6b7f9f;
+  font-size: 14px;
+  font-weight: 700;
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+.account-error {
+  color: #a52727;
+  background: #fff1f1;
+  border-radius: 12px;
+  padding: 10px;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+  margin-bottom: 14px;
+}
+.account-success {
+  color: #18653b;
+  background: #eefaf3;
+  border-radius: 12px;
+  padding: 10px;
+  font-size: 14px;
+  margin-bottom: 14px;
+}
+.account-help {
+  color: #6b7f9f;
+  font-size: 13px;
+  margin: 0;
+}
+.account-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  background: #2c418f;
+  color: white;
+  margin: 0 auto 12px;
+}
+.account-badge {
+  display: table;
+  margin: 6px auto 12px;
+  border-radius: 16px;
+  background: #eff6ff;
+  color: #2658f5;
+  padding: 3px 12px;
+  font-size: 12px;
+}
+.account-details {
+  background: #f7f9fb;
+  border-radius: 20px;
+  padding: 20px;
+  margin: 12px 0 20px;
+  display: grid;
+  grid-template-columns: 95px minmax(0, 1fr);
+  gap: 8px;
+  font-size: 14px;
+}
+.account-details dt {
+  color: #8ca0be;
+}
+.account-details dd {
+  margin: 0;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+.account-profile-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+@media (max-width: 380px) {
+  .account-modal {
+    padding: 24px 18px 20px;
+  }
+  .account-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .account-row-address {
+    grid-template-columns: minmax(0, 1fr) 80px;
+  }
+}

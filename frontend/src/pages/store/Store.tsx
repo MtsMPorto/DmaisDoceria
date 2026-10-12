@@ -16,7 +16,8 @@ import { FlavorModal } from "@/components/store/FlavorModal";
 import { FloatingCartButton } from "@/components/store/FloatingCartButton";
 import { Footer } from "@/components/store/Footer";
 import { Hero } from "@/components/store/Hero";
-import { ReviewsSection } from "@/components/store/ReviewsSection";
+// Avaliações desativadas nesta versão; preservar para reativação futura.
+// import { ReviewsSection } from "@/components/store/ReviewsSection";
 import { SearchOverlay } from "@/components/store/SearchOverlay";
 import { StoreHeader } from "@/components/store/StoreHeader";
 import { ErrorBox, LoadingBox } from "@/components/ui/AsyncState";
@@ -41,8 +42,8 @@ export default function Store() {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const searchBtnRef = useRef<HTMLButtonElement>(null);
 
-  const bestSellers = useMemo(() => activeProducts.filter((p) => p.stars === 5), [activeProducts]);
-  const promotions = useMemo(() => activeProducts.filter((p) => p.stars < 5), [activeProducts]);
+  const bestSellers = useMemo(() => activeProducts.filter(p => p.bestSeller), [activeProducts]);
+  const promotions = useMemo(() => activeProducts.filter((p) => p.featured), [activeProducts]);
 
   const suggestions = useMemo(() => {
     if (!search.trim()) return [];
@@ -69,7 +70,10 @@ export default function Store() {
   }
 
   function commitSearch(value: string) {
-    setCommittedSearch(value);
+    setCommittedSearch(value.trim());
+    setSearchOpen(false);
+    setSearchAnimating(false);
+    setTimeout(() => document.getElementById("catalogo")?.scrollIntoView({ behavior: "smooth" }), 0);
     setActiveCategory("Todos");
     setShowSuggestions(false);
   }
@@ -130,7 +134,8 @@ export default function Store() {
       ) : (
         <>
           <FeaturedSection products={promotions} onOpenFlavorModal={setFlavorModalProduct} />
-          <BestSellersCarousel products={bestSellers} onOpenFlavorModal={setFlavorModalProduct} />
+          {bestSellers.length > 0 && <BestSellersCarousel products={bestSellers} onOpenFlavorModal={setFlavorModalProduct} />}
+
           <CatalogSection
             activeCategory={activeCategory}
             products={filtered}
@@ -139,9 +144,9 @@ export default function Store() {
         </>
       )}
 
-      <ReviewsSection />
+      {/* <ReviewsSection /> */}
       <AboutSection />
-      <Footer onSelectCategory={setActiveCategory} />
+      <Footer />
 
       {totalItems > 0 && !cartOpen && !checkoutOpen && (
         <FloatingCartButton totalItems={totalItems} onOpen={() => setCartOpen(true)} />

@@ -2,3 +2,13 @@
 @import './tailwind.css';
 @import './theme.css';
 @import './store.css';
+
+/* Keep scrolling available without displaying scrollbar tracks. */
+html, body, *, *::before, *::after {
+  scrollbar-width: none !important;
+}
+*::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}

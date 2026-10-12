@@ -210,7 +210,7 @@ export default function AdminReports() {
             <div>
               <p className="text-primary font-black text-sm">Indicadores — {label}</p>
               <p className="text-muted-foreground text-xs">
-                Faturamento e lucro: vendas <strong>entregues</strong>, por data da venda, sem frete.
+                Faturamento e lucro: vendas <strong>entregues</strong>, por data da venda.
                 {current.costIncomplete && (
                   <span className="ml-2 text-amber-600 font-bold inline-flex items-center gap-1">
                     <AlertTriangle size={11} /> Há itens sem custo cadastrado: custo e lucro indisponíveis

@@ -15,22 +15,22 @@ export function AboutSection() {
               {
                 img: "https://images.unsplash.com/photo-1534119428213-bd2626145164?w=600&h=400&fit=crop&auto=format",
                 tag: "Nossa História",
-                title: "De paixão por doces a um negócio de verdade",
-                body: "A D'mais nasceu de um amor genuíno por confeitos. Começamos pequenos, atendendo revendedores locais com atenção e cuidado. Com o tempo, crescemos sem perder o que nos faz diferentes: o atendimento próximo e a seleção cuidadosa de produtos de marcas reconhecidas que realmente saem na prateleira.",
+                title: "O início dessa paixão",
+                body: "A D'mais nasceu do sonho de Dionatan, que desde criança aprendeu com o pai a importância da simplicidade, do carisma e da qualidade. Percebendo a necessidade de um atendimento humano e eficiente, a empresa surgiu com um propósito claro: entregar o melhor em produtos e atendimento.",
                 color: "#27408A",
               },
               {
                 img: "https://images.unsplash.com/photo-1519087318609-bfb5c04c27f5?w=600&h=400&fit=crop&auto=format",
                 tag: "Por que nos escolher",
                 title: "Qualidade, variedade e preço de atacado",
-                body: "Trabalhamos apenas com marcas consolidadas no mercado brasileiro. Nosso catálogo é pensado para o revendedor: alta rotatividade, embalagens atrativas e pedido mínimo acessível. Além disso, nosso atendimento pelo WhatsApp é rápido, direto e sem burocracia — você negocia com quem conhece o produto.",
+                body: "A simplicidade, carisma e qualidade se conectam ao escolher a D'mais. Você nos escolhe por sabedoria, qualidade e amor pelo que fazemos. Você nos escolhe pelo nosso atendimento, rapidez, agilidade e confiança. Nada e ninguém supera quem decide fazer o melhor.",
                 color: "#E42457",
               },
               {
                 img: "https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=600&h=400&fit=crop&auto=format",
                 tag: "Por que criamos o site",
                 title: "Facilitar sua vida na hora de comprar",
-                body: "Criamos este site para que você possa conhecer nosso catálogo completo a qualquer hora, de qualquer lugar, sem precisar ligar ou esperar resposta. Aqui você monta seu pedido com calma, escolhe os produtos e finaliza pelo WhatsApp em segundos. Simples, rápido e moderno — do jeito que o seu negócio merece.",
+                body: "Criamos este site para que você possa conhecer nosso catálogo completo a qualquer hora, de qualquer lugar, sem precisar ligar ou esperar resposta. Aqui você monta seu pedido com calma, escolhe os produtos e finaliza pelo WhatsApp em segundos.",
                 color: "#1a9e5c",
               },
             ].map((card, i) => (
@@ -50,9 +50,6 @@ export function AboutSection() {
                     {card.title}
                   </h3>
                   <p className="text-muted-foreground text-sm leading-relaxed flex-1">{card.body}</p>
-                  <div className="mt-4 pt-3 border-t border-border">
-                    <span className="text-xs font-bold" style={{ color: card.color }}>Saiba mais →</span>
-                  </div>
                 </div>
               </div>
             ))}

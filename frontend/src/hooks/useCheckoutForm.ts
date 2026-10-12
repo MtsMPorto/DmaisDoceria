@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { isValidCnpj, isValidCpf, isValidUf, onlyDigits } from "@/lib/document";
+import { useEffect, useState } from "react";
+import { isValidCnpj, isValidUf, onlyDigits } from "@/lib/document";
+import { useAccount } from "@/contexts/AccountContext";
 import type { CustomerInfo } from "@/types";
 
 // Dados do cliente no fluxo "Enviar pedido pelo WhatsApp". O estado fica na loja para
@@ -9,16 +10,17 @@ export function useCheckoutForm() {
     name: "", personType: "fisica", document: "", phone: "",
     cep: "", address: "", number: "", complement: "", neighborhood: "", city: "", state: "",
   });
+  const { profile } = useAccount();
+  useEffect(() => {
+    if(profile) setCustomer({name:profile.name,personType:profile.type==="PF"?"fisica":"juridica",document:profile.type==="PJ"?profile.document||"":"",phone:profile.phone,cep:profile.zip,address:profile.street,number:profile.streetNumber,complement:profile.complement||"",neighborhood:profile.neighborhood,city:profile.city,state:profile.state});
+  },[profile]);
   const [errors, setErrors] = useState<Partial<Record<keyof CustomerInfo, string>>>({});
 
   function validate() {
     const e: Partial<Record<keyof CustomerInfo, string>> = {};
     if (!customer.name.trim()) e.name = "Nome obrigatório";
 
-    const document = onlyDigits(customer.document);
-    if (!document) e.document = "Documento obrigatório";
-    else if (customer.personType === "fisica" && !isValidCpf(document)) e.document = "CPF inválido";
-    else if (customer.personType === "juridica" && !isValidCnpj(document)) e.document = "CNPJ inválido";
+    if (customer.personType === "juridica" && !isValidCnpj(customer.document)) e.document = "CNPJ inválido";
 
     const phone = onlyDigits(customer.phone);
     if (!phone) e.phone = "Telefone obrigatório";

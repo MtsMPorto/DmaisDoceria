@@ -20,6 +20,8 @@ export function toPublicProduct(row: PublicProductRow) {
     unitDescription: row.unitDescription,
     minQty: row.minQty,
     stock: row.stock,
+    bestSeller: row.bestSeller,
+    featured: row.featured,
     stars: row.stars,
     flavors: row.flavors,
   };
@@ -40,6 +42,8 @@ export function toAdminProduct(row: AdminProductRow) {
     unitDescription: row.unitDescription,
     minQty: row.minQty,
     stock: row.stock,
+    bestSeller: row.bestSeller,
+    featured: row.featured,
     stars: row.stars,
     active: row.active,
     deletedAt: row.deletedAt,
@@ -110,4 +114,9 @@ export async function updateFlavor(productId: number, flavorId: number, input: U
     throw new AppError(404, "FLAVOR_NOT_FOUND", "Sabor não encontrado.");
   }
   return repository.updateFlavor(flavorId, input);
+}
+
+export async function remove(id: number) {
+  await requireProduct(id);
+  return repository.remove(id);
 }

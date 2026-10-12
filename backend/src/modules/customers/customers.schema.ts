@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { isValidCnpj, isValidCpf, onlyDigits } from "../../shared/utils/document.js";
+import { isValidCnpj, onlyDigits } from "../../shared/utils/document.js";
 import { pagingShape } from "../../shared/utils/params.js";
 import { UF_LIST } from "../orders/orders.schema.js";
 
@@ -19,7 +19,7 @@ const optionalText = (max: number) =>
 
 const digits = z.string().max(30, "Valor muito longo.").transform(onlyDigits);
 
-const document = digits.transform((value) => (value === "" ? null : value)).nullable();
+const document = z.string().max(18).regex(/^[A-Za-z0-9./-]*$/).transform(v => v.replace(/[./-]/g, "").toUpperCase()).transform((value) => (value === "" ? null : value)).nullable();
 
 const phone = digits.refine(
   (value) => value.length >= 10 && value.length <= 15,
@@ -49,10 +49,10 @@ const email = z
 
 const type = z.enum(["PF", "PJ"], "Tipo deve ser PF ou PJ.");
 
-// CPF/CNPJ com dígito verificador. CNPJ apenas numérico por ora (o banco já aceita letras).
+// Não coletar CPF. CNPJ numérico ou alfanumérico, com dígitos verificadores.
 export function documentProblem(customerType: "PF" | "PJ", value: string | null): string | null {
   if (value === null) return null;
-  if (customerType === "PF") return isValidCpf(value) ? null : "CPF inválido.";
+  if (customerType === "PF") return "Pessoa física não deve informar documento.";
   return isValidCnpj(value) ? null : "CNPJ inválido.";
 }
 

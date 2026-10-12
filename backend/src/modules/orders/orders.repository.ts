@@ -37,8 +37,8 @@ export function isUniqueViolation(err: unknown): boolean {
   return typeof err === "object" && err !== null && "code" in err && err.code === "P2002";
 }
 
-export function findReceiptByRequestId(requestId: string): Promise<OrderReceipt | null> {
-  return prisma.order.findUnique({ where: { requestId }, select: receiptSelect });
+export function findReceiptByRequestId(requestId: string, customerId: number): Promise<OrderReceipt | null> {
+  return prisma.order.findFirst({ where: { requestId, customerId }, select: receiptSelect });
 }
 
 export function findProductsForOrder(ids: number[]): Promise<CatalogProduct[]> {
@@ -63,18 +63,20 @@ export function findProductsForOrder(ids: number[]): Promise<CatalogProduct[]> {
 // enviados aqui não prevalecem. Não mexe em estoque.
 export function createWithItems(input: {
   requestId?: string;
+  customerId: number;
   customer: CreateOrderInput["customer"];
   lines: OrderLine[];
 }): Promise<{ id: number }> {
-  const { requestId, customer, lines } = input;
+  const { requestId, customer, customerId, lines } = input;
 
   return prisma.order.create({
     select: { id: true },
     data: {
       requestId,
+      customerId,
       customerType: customer.type,
       customerName: customer.name,
-      document: customer.document,
+      document: customer.type === "PF" ? null : customer.document,
       phone: customer.phone,
       zip: customer.zip,
       street: customer.street,
