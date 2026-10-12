@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router";
-import { Inbox, LogOut, MessageSquare, Package, Receipt, Users } from "lucide-react";
+import { Inbox, LogOut, Package, Receipt, Users } from "lucide-react";
+// import { MessageSquare } from "lucide-react";
 // import { BarChart2, ClipboardList } from "lucide-react";
 import logoImg from "@/assets/images/Logo_Doces-removebg-preview__1_.png";
 // import { SHOW_QUOTES } from "@/config/features";
@@ -13,7 +14,7 @@ import AdminProducts from "./products/AdminProducts";
 // import AdminQuotes from "./quotes/AdminQuotes";
 // import AdminReports from "./reports/AdminReports";
 import AdminSales from "./sales/AdminSales";
-import AdminTestimonials from "./testimonials/AdminTestimonials";
+// import AdminTestimonials from "./testimonials/AdminTestimonials";
 
 type Section = "produtos" | "solicitacoes" | "clientes" | "vendas" | "relatorios" | "depoimentos" | "orcamentos";
 
@@ -23,7 +24,7 @@ const TABS: { key: Section; label: string; icon: typeof Package }[] = [
   { key: "clientes", label: "Clientes", icon: Users },
   { key: "vendas", label: "Vendas", icon: Receipt },
   // { key: "relatorios", label: "Relatórios", icon: BarChart2 },
-  { key: "depoimentos", label: "Depoimentos", icon: MessageSquare },
+  // { key: "depoimentos", label: "Depoimentos", icon: MessageSquare },
   // ...(SHOW_QUOTES ? [{ key: "orcamentos" as const, label: "Orçamentos", icon: ClipboardList }] : []),
 ];
 
@@ -104,7 +105,7 @@ export default function AdminPanel() {
           />
         )}
         {/* {section === "relatorios" && <AdminReports />} */}
-        {section === "depoimentos" && <AdminTestimonials />}
+        {/* {section === "depoimentos" && <AdminTestimonials />} */}
         {/* {SHOW_QUOTES && section === "orcamentos" && <AdminQuotes />} */}
       </div>
     </div>

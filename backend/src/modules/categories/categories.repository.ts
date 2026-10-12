@@ -29,3 +29,11 @@ export async function exists(id: number): Promise<boolean> {
 export function update(id: number, input: UpdateCategoryInput) {
   return prisma.category.update({ where: { id }, data: input, select: adminSelect });
 }
+
+export async function remove(id: number) {
+  return prisma.category.delete({ where: { id }, select: adminSelect });
+}
+
+export function countProducts(id: number) {
+  return prisma.product.count({ where: { categoryId: id } });
+}

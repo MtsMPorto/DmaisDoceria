@@ -14,6 +14,7 @@ const notFound = () => new AppError(404, "CUSTOMER_NOT_FOUND", "Cliente não enc
 function withStats(row: CustomerRow, stats: Awaited<ReturnType<typeof repository.statsFor>> extends Map<number, infer S> ? S | undefined : never) {
   return {
     ...row,
+    document: row.type === "PF" ? null : row.document,
     stats: {
       // "Total comprado" = total COM frete das vendas entregues.
       totalBoughtWithDelivery: stats?.totalBought ?? "0.00",
@@ -80,8 +81,14 @@ export async function update(id: number, input: UpdateCustomerInput) {
   if (!current) throw notFound();
 
   const type = input.type ?? current.type;
+  // Não coletar novos CPFs; não apagar silenciosamente documentos históricos
+  // ao salvar um formulário que deixou de ter esse campo.
+  if (type === "PF") {
+    if (input.document) throw new AppError(422, "INVALID_DOCUMENT", "Pessoa física não deve informar documento.");
+    input = { ...input, document: undefined };
+  }
   const document = input.document === undefined ? current.document : input.document;
-  if (input.type !== undefined || input.document !== undefined) {
+  if (type === "PJ" && (input.type !== undefined || input.document !== undefined)) {
     const problem = documentProblem(type, document);
     if (problem) throw new AppError(422, "INVALID_DOCUMENT", problem);
   }

@@ -24,6 +24,8 @@ interface RawDatabaseError {
 
 const RAISE_EXCEPTION = "P0001";
 const UNIQUE_MESSAGES: Record<string, string> = {
+  customer_accounts_email_key: "Esse e-mail já está cadastrado.",
+  customer_accounts_customer_id_key: "Esse cliente já possui uma conta. Entre em contato com o suporte.",
   categories_name_key: "Já existe uma categoria com este nome.",
   product_flavors_product_id_name_key: "Este produto já tem um sabor com este nome.",
   customers_document_key: "Já existe um cliente com este documento.",

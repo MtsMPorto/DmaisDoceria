@@ -43,6 +43,9 @@ CREATE TABLE public.products (
   min_qty integer NOT NULL DEFAULT 1 CHECK (min_qty > 0),
   stock integer NOT NULL DEFAULT 0 CHECK (stock >= 0),
   active boolean NOT NULL DEFAULT true,
+  best_seller boolean NOT NULL DEFAULT false,
+  archived_at timestamptz,
+  featured boolean NOT NULL DEFAULT false,
   stars integer NOT NULL DEFAULT 5 CHECK (stars BETWEEN 1 AND 5),
   deleted_at timestamp(3),
   created_at timestamp(3) NOT NULL DEFAULT timezone('UTC', now()),
@@ -104,6 +107,41 @@ CREATE INDEX customers_name_idx ON public.customers(name);
 CREATE INDEX customers_phone_idx ON public.customers(phone);
 
 -- 4. SOLICITAÇÕES DA LOJA. Não são vendas; não baixam nem reservam estoque.
+CREATE TABLE public.customer_accounts (
+  id serial PRIMARY KEY,
+  email varchar(150) NOT NULL UNIQUE CHECK (email = lower(btrim(email))),
+  password_hash text NOT NULL,
+  customer_id integer UNIQUE REFERENCES public.customers(id) ON DELETE RESTRICT,
+  pending_profile jsonb,
+  verified_at timestamp(3),
+  session_version integer NOT NULL DEFAULT 0,
+  failed_attempts integer NOT NULL DEFAULT 0,
+  locked_until timestamp(3),
+  created_at timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CHECK (verified_at IS NULL OR customer_id IS NOT NULL)
+);
+CREATE TABLE public.account_challenges (
+  id uuid PRIMARY KEY,
+  account_id integer NOT NULL REFERENCES public.customer_accounts(id) ON DELETE CASCADE,
+  purpose text NOT NULL CHECK (purpose IN ('signup','recovery','email')),
+  email varchar(150) NOT NULL,
+  code_hash text NOT NULL,
+  attempts integer NOT NULL DEFAULT 0,
+  created_at timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  expires_at timestamp(3) NOT NULL,
+  verified_at timestamp(3),
+  reset_hash text UNIQUE,
+  UNIQUE(account_id, purpose)
+);
+CREATE INDEX account_challenges_expires_at_idx ON public.account_challenges(expires_at);
+ALTER TABLE public.customer_accounts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.account_challenges ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.customer_accounts, public.account_challenges FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON SEQUENCE public.customer_accounts_id_seq FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.customer_accounts, public.account_challenges TO service_role;
+GRANT USAGE, SELECT ON SEQUENCE public.customer_accounts_id_seq TO service_role;
+
+
 CREATE TABLE public.orders (
   id serial PRIMARY KEY,
   request_id text UNIQUE,
@@ -111,7 +149,7 @@ CREATE TABLE public.orders (
   customer_id integer REFERENCES public.customers(id) ON DELETE RESTRICT,
   customer_type public.customer_type NOT NULL,
   customer_name text NOT NULL CHECK (btrim(customer_name) <> ''),
-  document varchar(14) NOT NULL,
+  document varchar(14),
   phone varchar(15) NOT NULL CHECK (phone ~ '^[0-9]{10,15}$'),
   zip varchar(8) NOT NULL CHECK (zip ~ '^[0-9]{8}$'),
   street text NOT NULL CHECK (btrim(street) <> ''),
@@ -123,7 +161,7 @@ CREATE TABLE public.orders (
   created_at timestamp(3) NOT NULL DEFAULT timezone('UTC', now()),
   updated_at timestamp(3) NOT NULL DEFAULT timezone('UTC', now()),
   CHECK (request_id IS NULL OR btrim(request_id) <> ''),
-  CHECK ((customer_type = 'PF' AND document ~ '^[0-9]{11}$') OR (customer_type = 'PJ' AND document ~ '^[0-9A-Z]{12}[0-9]{2}$'))
+  CHECK ((customer_type = 'PF' AND (document IS NULL OR document ~ '^[0-9]{11}$')) OR (customer_type = 'PJ' AND document IS NOT NULL AND document ~ '^[0-9A-Z]{12}[0-9]{2}$'))
 );
 CREATE INDEX orders_customer_idx ON public.orders(customer_id);
 CREATE INDEX orders_status_date_idx ON public.orders(status, created_at DESC, id DESC);
@@ -289,8 +327,8 @@ BEGIN
     'city', c.city, 'state', c.state);
   IF NEW.order_id IS NOT NULL THEN
     SELECT * INTO STRICT o FROM public.orders WHERE id = NEW.order_id;
-    IF c.document IS DISTINCT FROM o.document OR c.type <> o.customer_type OR
-      (o.customer_id IS NOT NULL AND o.customer_id <> c.id) THEN RAISE EXCEPTION 'Pedido pertence a outro cliente.'; END IF;
+    IF (o.customer_id IS NOT NULL AND o.customer_id <> c.id) OR
+      (o.customer_id IS NULL AND (c.document IS DISTINCT FROM o.document OR c.type <> o.customer_type)) THEN RAISE EXCEPTION 'Pedido pertence a outro cliente.'; END IF;
     NEW.customer_name := o.customer_name; NEW.customer_phone := o.phone;
     NEW.customer_document := o.document;
     NEW.delivery_address := jsonb_build_object('zip', o.zip, 'street', o.street,
@@ -392,7 +430,7 @@ SET search_path = '' AS $$
 BEGIN
   IF TG_OP = 'INSERT' THEN
     IF NEW.status <> 'REQUESTED' THEN RAISE EXCEPTION 'Pedido deve iniciar como REQUESTED.'; END IF;
-    IF NEW.customer_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM public.customers WHERE id = NEW.customer_id AND type = NEW.customer_type AND document = NEW.document) THEN
+    IF NEW.customer_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM public.customers WHERE id = NEW.customer_id AND type = NEW.customer_type AND ((NEW.customer_type = 'PF' AND NEW.document IS NULL) OR document IS NOT DISTINCT FROM NEW.document)) THEN
       RAISE EXCEPTION 'Cliente e documento da solicitação não correspondem.';
     END IF;
     RETURN NEW;
@@ -408,7 +446,7 @@ BEGIN
     RAISE EXCEPTION 'Cancele primeiro a venda vinculada.';
   END IF;
   IF OLD.customer_id IS NOT NULL AND NEW.customer_id IS DISTINCT FROM OLD.customer_id THEN RAISE EXCEPTION 'Não é permitido trocar o cliente vinculado.'; END IF;
-  IF NEW.customer_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM public.customers WHERE id = NEW.customer_id AND type = NEW.customer_type AND document = NEW.document) THEN
+  IF OLD.customer_id IS NULL AND NEW.customer_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM public.customers WHERE id = NEW.customer_id AND type = NEW.customer_type AND document IS NOT DISTINCT FROM NEW.document) THEN
     RAISE EXCEPTION 'Cliente e documento da solicitação não correspondem.';
   END IF;
   RETURN NEW;
@@ -513,7 +551,7 @@ BEGIN
     IF NEW.order_id IS NOT NULL THEN
       SELECT * INTO STRICT o FROM public.orders WHERE id = NEW.order_id FOR UPDATE;
       IF o.status = 'CANCELED' OR (o.customer_id IS NOT NULL AND o.customer_id <> NEW.customer_id) OR
-        NOT EXISTS (SELECT 1 FROM public.customers WHERE id = NEW.customer_id AND type = o.customer_type AND document = o.document) THEN
+        NOT EXISTS (SELECT 1 FROM public.customers WHERE id = NEW.customer_id AND (o.customer_id IS NOT NULL OR (type = o.customer_type AND document IS NOT DISTINCT FROM o.document))) THEN
         RAISE EXCEPTION 'Pedido cancelado ou cliente diferente da solicitação.';
       END IF;
     END IF;

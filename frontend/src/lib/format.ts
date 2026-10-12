@@ -19,7 +19,7 @@ export function formatDocument(value: string, type: PersonType) {
   if (type === "fisica") {
     return digits.slice(0, 11).replace(/(\d{3})(\d)/, "$1.$2").replace(/(\d{3})(\d)/, "$1.$2").replace(/(\d{3})(\d{1,2})$/, "$1-$2");
   }
-  return digits.slice(0, 14).replace(/(\d{2})(\d)/, "$1.$2").replace(/(\d{3})(\d)/, "$1.$2").replace(/(\d{3})(\d)/, "$1/$2").replace(/(\d{4})(\d{1,2})$/, "$1-$2");
+  return value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 14).replace(/([A-Z0-9]{2})([A-Z0-9])/, "$1.$2").replace(/([A-Z0-9]{3})([A-Z0-9])/, "$1.$2").replace(/([A-Z0-9]{3})([A-Z0-9])/, "$1/$2").replace(/([A-Z0-9]{4})([0-9]{1,2})$/, "$1-$2");
 }
 
 export function formatPhone(value: string) {

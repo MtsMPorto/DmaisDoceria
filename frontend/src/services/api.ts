@@ -28,15 +28,17 @@ export function clearSession(): void {
 }
 
 interface RequestOptions {
+  rawBody?: Blob;
   method?: "GET" | "POST" | "PATCH" | "DELETE";
   body?: unknown;
   /** Envia o Bearer do administrador e trata 401 derrubando a sessão. */
   auth?: boolean;
 }
 
-async function send(path: string, { method = "GET", body, auth = false }: RequestOptions): Promise<Response> {
+async function send(path: string, { method = "GET", body, rawBody, auth = false }: RequestOptions): Promise<Response> {
   const headers: Record<string, string> = {};
   if (body !== undefined) headers["Content-Type"] = "application/json";
+  if (rawBody) headers["Content-Type"] = rawBody.type;
   if (auth) {
     const token = sessionStorage.getItem(ADMIN_TOKEN_KEY);
     if (token) headers.Authorization = `Bearer ${token}`;
@@ -47,7 +49,7 @@ async function send(path: string, { method = "GET", body, auth = false }: Reques
     response = await fetch(`${API_URL}${path}`, {
       method,
       headers,
-      body: body === undefined ? undefined : JSON.stringify(body),
+      body: rawBody ?? (body === undefined ? undefined : JSON.stringify(body)),
     });
   } catch {
     throw new ApiError(0, "NETWORK_ERROR", CONNECTION_ERROR_MESSAGE);

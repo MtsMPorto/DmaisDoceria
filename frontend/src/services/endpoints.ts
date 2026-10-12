@@ -57,6 +57,8 @@ export interface ProductPayload {
   unit: string;
   unitDescription?: string | null;
   minQty: number;
+  bestSeller: boolean;
+  featured: boolean;
   stars: number;
   active: boolean;
 }

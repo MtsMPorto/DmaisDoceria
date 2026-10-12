@@ -4,10 +4,13 @@ import { ArrowLeft, ShoppingCart, Package, Truck } from "lucide-react";
 import logoImg from "@/assets/images/Logo_Doces-removebg-preview__1_.png";
 import { useProducts } from "@/contexts/ProductsContext";
 import { useCart } from "@/contexts/CartContext";
-import { Stars } from "@/components/ui/Stars";
+// import { Stars } from "@/components/ui/Stars";
 import { WaIcon } from "@/components/ui/WaIcon";
 import { StockBadge } from "@/components/store/StockBadge";
 import { UpsellModal } from "@/components/store/UpsellModal";
+import { CartDrawer } from "@/components/store/CartDrawer";
+import { CheckoutModal } from "@/components/store/CheckoutModal";
+import { useCheckoutForm } from "@/hooks/useCheckoutForm";
 import { ErrorBox, LoadingBox } from "@/components/ui/AsyncState";
 
 export default function ProductPage() {
@@ -23,6 +26,15 @@ export default function ProductPage() {
   );
   const [showUpsell, setShowUpsell] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const checkoutForm = useCheckoutForm();
+
+  useEffect(() => {
+    if (!cartOpen && !checkoutOpen && !showUpsell) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = previous; };
+  }, [cartOpen, checkoutOpen, showUpsell]);
 
   // Reset flavor when product changes
   useEffect(() => {
@@ -62,6 +74,7 @@ export default function ProductPage() {
   const inCart = cart.find((i) => cartKey(i) === currentKey);
 
   function handleAddToCart() {
+    if (cart.filter(i => i.id === product.id).reduce((sum,i) => sum+i.qty,0) >= product.stock) return;
     addToCart(product, selectedFlavor);
     setShowUpsell(true);
   }
@@ -78,7 +91,7 @@ export default function ProductPage() {
           <Link to="/">
             <img src={logoImg} alt="D'mais" className="h-10 w-10 object-contain" />
           </Link>
-          <Link to="/" className="relative">
+          <button type="button" onClick={() => setCartOpen(true)} className="relative" aria-label="Ver carrinho">
             <div className="w-9 h-9 rounded-full flex items-center justify-center" style={{ background: "#F97316" }}>
               <ShoppingCart size={16} className="text-white" />
             </div>
@@ -87,7 +100,7 @@ export default function ProductPage() {
                 {totalItems}
               </span>
             )}
-          </Link>
+          </button>
         </div>
       </header>
 
@@ -118,7 +131,8 @@ export default function ProductPage() {
               {product.name}
             </h1>
             <div className="flex items-center gap-3 flex-wrap">
-              <Stars count={product.stars} size={14} />
+              {/* Avaliações desativadas nesta versão. */}
+              {/* <Stars count={product.stars} size={14} /> */}
               <StockBadge stock={product.stock} />
             </div>
           </div>
@@ -209,7 +223,7 @@ export default function ProductPage() {
                 ← Voltar à loja
               </Link>
               <button
-                onClick={handleAddToCart}
+                disabled={cart.filter(i => i.id === product.id).reduce((sum,i) => sum+i.qty,0) >= product.stock} onClick={handleAddToCart}
                 className="flex-1 py-4 rounded-full text-white font-black flex items-center justify-center gap-2 shadow-lg"
                 style={{ background: "#27408A" }}>
                 <ShoppingCart size={18} /> Adicionar mais
@@ -236,9 +250,16 @@ export default function ProductPage() {
           product={product}
           suggestions={upsellProducts}
           onClose={() => setShowUpsell(false)}
-          onGoToCart={() => { setShowUpsell(false); navigate("/"); }}
+          onGoToCart={() => { setShowUpsell(false); setCartOpen(true); }}
         />
       )}
+      {cartOpen && (
+        <CartDrawer
+          onClose={() => setCartOpen(false)}
+          onCheckout={() => { setCartOpen(false); setCheckoutOpen(true); }}
+        />
+      )}
+      {checkoutOpen && <CheckoutModal form={checkoutForm} onClose={() => setCheckoutOpen(false)} />}
     </div>
   );
 }

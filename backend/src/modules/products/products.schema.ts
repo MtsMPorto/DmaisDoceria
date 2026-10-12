@@ -32,6 +32,8 @@ const fields = {
   unit: text(40),
   unitDescription: nullableText(120),
   minQty: z.number().int().min(1).max(9999),
+  bestSeller: z.boolean(),
+  featured: z.boolean(),
   stars: z.number().int().min(1).max(5),
   active: z.boolean(),
 };
@@ -49,6 +51,8 @@ export const createProductSchema = z.strictObject({
   unit: fields.unit,
   unitDescription: fields.unitDescription.optional(),
   minQty: fields.minQty.default(1),
+  bestSeller: fields.bestSeller.default(false),
+  featured: fields.featured.default(false),
   stars: fields.stars.default(5),
   active: fields.active.default(true),
   // Saldo inicial: só no cadastro. Depois disso, o saldo muda apenas por ajuste.
@@ -76,6 +80,8 @@ export const updateProductSchema = z
     unit: fields.unit.optional(),
     unitDescription: fields.unitDescription.optional(),
     minQty: fields.minQty.optional(),
+    bestSeller: fields.bestSeller.optional(),
+    featured: fields.featured.optional(),
     stars: fields.stars.optional(),
     active: fields.active.optional(),
   })

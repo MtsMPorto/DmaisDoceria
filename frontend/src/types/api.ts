@@ -18,6 +18,8 @@ export interface ApiProduct {
   unitDescription: string | null;
   minQty: number;
   stock: number;
+  bestSeller: boolean;
+  featured: boolean;
   stars: number;
   flavors: ApiFlavor[];
 }
@@ -119,7 +121,7 @@ export interface OrderDetail {
   customer: {
     type: PersonKind;
     name: string;
-    document: string;
+    document: string | null;
     phone: string;
     zip: string;
     street: string;

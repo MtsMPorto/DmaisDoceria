@@ -11,7 +11,7 @@ export function CatalogSection({
   onOpenFlavorModal: (product: Product) => void;
 }) {
   return (
-      <main className="max-w-7xl mx-auto px-4 py-10">
+      <main id="catalogo" className="max-w-7xl mx-auto px-4 py-10">
         <div className="flex items-end justify-between mb-6">
           <div>
             <p className="text-accent text-xs font-black uppercase tracking-widest mb-1">🍬 Catálogo</p>

@@ -108,7 +108,7 @@ export function SearchOverlay({
 
             {search.trim() && (
               <button
-                onMouseDown={() => commitSearch(search)}
+                onClick={() => commitSearch(search)}
                 className="mt-3 text-white/60 text-xs font-semibold flex items-center gap-1.5 hover:text-white transition-colors">
                 <span className="bg-white/20 px-2 py-0.5 rounded text-[10px] font-black">Enter</span>
                 para ver todos os resultados de "{search}"

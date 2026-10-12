@@ -43,7 +43,7 @@ export function CustomerFicha({ customer, onEdit, onNewSale, onOpenSale, onClose
       }>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: "Total comprado (com frete)", value: stats.deliveredCount > 0 ? brl(stats.totalBoughtWithDelivery) : "—", sub: "vendas entregues" },
+          { label: "Total comprado", value: stats.deliveredCount > 0 ? brl(stats.totalBoughtWithDelivery) : "—", sub: "vendas entregues" },
           { label: "Valor pendente", value: brl(stats.pendingAmount), sub: "a receber", warn: Number(stats.pendingAmount) > 0 },
           { label: "Produto favorito", value: stats.topProduct ?? "—", sub: "mais comprado" },
           { label: "Última compra", value: stats.lastPurchase ? formatDate(stats.lastPurchase) : "—", sub: `${stats.deliveredCount} entregues · ${stats.salesCount} vendas` },
@@ -69,7 +69,7 @@ export function CustomerFicha({ customer, onEdit, onNewSale, onOpenSale, onClose
             ["Nome", customer.name],
             ["Nome fantasia", customer.tradeName],
             ["Responsável", customer.responsibleName],
-            [customer.type === "PF" ? "CPF" : "CNPJ", customer.document ? formatDocument(customer.document, customer.type === "PF" ? "fisica" : "juridica") : null],
+            ...(customer.type === "PJ" ? [["CNPJ", customer.document ? formatDocument(customer.document, "juridica") : null]] : []),
             ["Telefone", formatPhone(customer.phone)],
             ["E-mail", customer.email],
             ["Endereço", [customer.street, customer.streetNumber].filter(Boolean).join(", ") + (customer.complement ? ` — ${customer.complement}` : "") || null],

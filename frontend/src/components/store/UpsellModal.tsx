@@ -15,7 +15,9 @@ export function UpsellModal({ product, suggestions, onClose, onGoToCart }: Upsel
   const { addToCart, cart, cartKey } = useCart();
   const [added, setAdded] = useState<number[]>([]);
 
+  const availableSuggestions = suggestions.filter(p => p.stock > 0 && !p.flavors?.length);
   function handleAdd(p: Product) {
+    if (cart.filter(i => i.id === p.id).reduce((sum,i) => sum+i.qty,0) >= p.stock) return;
     addToCart(p);
     setAdded((prev) => [...prev, p.id]);
   }
@@ -37,13 +39,13 @@ export function UpsellModal({ product, suggestions, onClose, onGoToCart }: Upsel
         </div>
 
         {/* Upsell suggestions */}
-        {suggestions.length > 0 && (
+        {availableSuggestions.length > 0 && (
           <div className="px-5 pt-4 pb-2">
             <p className="text-xs font-black uppercase tracking-wide mb-3" style={{ color: "#27408A" }}>
               🔥 Clientes também levam junto:
             </p>
             <div className="space-y-3">
-              {suggestions.map((s) => {
+              {availableSuggestions.map((s) => {
                 const isAdded = added.includes(s.id);
                 return (
                   <div key={s.id} className="flex items-center gap-3 bg-[#F4F6FA] rounded-2xl p-3">
@@ -58,7 +60,7 @@ export function UpsellModal({ product, suggestions, onClose, onGoToCart }: Upsel
                     </div>
                     <button
                       onClick={() => handleAdd(s)}
-                      disabled={isAdded}
+                      disabled={isAdded || cart.filter(i => i.id === s.id).reduce((sum,i) => sum+i.qty,0) >= s.stock}
                       className="flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-black transition-all"
                       style={isAdded
                         ? { background: "#dcfce7", color: "#16a34a" }

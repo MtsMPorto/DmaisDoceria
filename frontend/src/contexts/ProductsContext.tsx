@@ -17,6 +17,8 @@ function toStoreProduct(row: ApiProduct): Product {
     minQty: row.minQty,
     image: row.imageUrl ?? logoImg,
     category: row.category,
+    bestSeller: row.bestSeller,
+    featured: row.featured,
     stars: row.stars,
     stock: row.stock,
     flavors: row.flavors.length > 0 ? row.flavors.map((flavor) => flavor.name) : undefined,
@@ -52,13 +54,15 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     setError(null);
 
-    Promise.all([storeApi.products(), storeApi.categories(), storeApi.settings(), storeApi.testimonials()])
-      .then(([productRows, categoryRows, settingsRow, testimonialRows]) => {
+    // Depoimentos desativados: não consultar a API enquanto a seção estiver oculta.
+    // Para reativar, restaurar storeApi.testimonials(), testimonialRows e setTestimonials abaixo.
+    Promise.all([storeApi.products(), storeApi.categories(), storeApi.settings()])
+      .then(([productRows, categoryRows, settingsRow]) => {
         if (cancelled) return;
         setProducts(productRows.map(toStoreProduct));
         setCategories(categoryRows.map((category) => category.name));
         setSettings(settingsRow);
-        setTestimonials(testimonialRows);
+        // setTestimonials(testimonialRows);
       })
       .catch((err: unknown) => {
         if (!cancelled) setError(errorMessage(err));

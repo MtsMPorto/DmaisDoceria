@@ -82,14 +82,14 @@ export default function AdminCustomers({ onNewSale, onOpenSale }: { onNewSale: (
                       <p className="text-primary font-black truncate">{customerDisplayName(customer)}</p>
                       <p className="text-muted-foreground text-xs">
                         {customer.code} · {customer.type === "PF" ? "PF" : "PJ"}
-                        {customer.document ? ` · ${formatDocument(customer.document, customer.type === "PF" ? "fisica" : "juridica")}` : ""}
+                        {customer.type === "PJ" && customer.document ? ` · ${formatDocument(customer.document, "juridica")}` : ""}
                       </p>
                       <p className="text-muted-foreground text-xs">{formatPhone(customer.phone)}</p>
                     </div>
                     {!customer.active && <span className="text-[10px] font-black bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full">Inativo</span>}
                   </div>
                   <div className="mt-3 pt-3 border-t border-border text-xs space-y-1">
-                    <div className="flex justify-between"><span className="text-muted-foreground">Total comprado (c/ frete)</span>
+                    <div className="flex justify-between"><span className="text-muted-foreground">Total comprado</span>
                       <span className="text-primary font-black">{customer.stats.deliveredCount > 0 ? brl(customer.stats.totalBoughtWithDelivery) : "—"}</span></div>
                     {Number(customer.stats.pendingAmount) > 0 && (
                       <div className="flex justify-between"><span className="text-muted-foreground">Pendente</span>

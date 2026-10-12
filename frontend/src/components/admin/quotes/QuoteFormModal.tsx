@@ -133,11 +133,8 @@ export function QuoteFormModal({
       const digits = normalizePhone(form.newPhone);
       const duplicate = customers.find(c => normalizePhone(c.phone) === digits);
       if (duplicate) {
-        const use = window.confirm(`Já existe um cliente com esse telefone: ${getDisplayName(duplicate)} (${duplicate.code}). Deseja usar esse cadastro?`);
-        if (use) {
-          set({ customerId: duplicate.id, customerName: getDisplayName(duplicate), customerPhone: duplicate.phone, isNewCustomer: false });
-          return; // user needs to re-confirm save
-        }
+        setPhoneError("Este telefone j\u00e1 possui cadastro. Selecione o cliente existente.");
+        return;
       }
     }
 
@@ -276,18 +273,10 @@ export function QuoteFormModal({
                     className="flex-1 px-3 py-2 text-xs border border-border rounded-xl outline-none focus:border-primary bg-white" />
                 </div>
               </div>
-              {/* Delivery */}
-              <div>
-                <label className="text-[10px] text-muted-foreground font-bold block mb-1">Taxa de entrega (R$)</label>
-                <input type="number" min="0" step="0.01" value={form.deliveryFee || ""}
-                  onChange={e => set({ deliveryFee: parseFloat(e.target.value) || 0 })}
-                  placeholder="0,00" className={inputCls} />
-              </div>
               {/* Summary */}
               <div className="border-t border-border/40 pt-3 space-y-1 text-xs">
                 <div className="flex justify-between text-muted-foreground"><span>Subtotal</span><span className="tabular-nums">{formatCurrency(subtotal)}</span></div>
                 {discountAmount > 0 && <div className="flex justify-between text-green-600"><span>Desconto</span><span className="tabular-nums">− {formatCurrency(discountAmount)}</span></div>}
-                {form.deliveryFee > 0 && <div className="flex justify-between text-muted-foreground"><span>Entrega</span><span className="tabular-nums">+ {formatCurrency(form.deliveryFee)}</span></div>}
                 <div className="flex justify-between text-primary font-black text-sm border-t border-border pt-1"><span>Total</span><span className="tabular-nums">{formatCurrency(total)}</span></div>
               </div>
             </div>

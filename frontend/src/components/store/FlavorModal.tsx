@@ -27,7 +27,7 @@ export function FlavorModal({
   const total = Object.values(quantities).reduce((s, v) => s + v, 0);
 
   function adjust(flavor: string, delta: number) {
-    setQuantities((q) => ({ ...q, [flavor]: Math.max(0, (q[flavor] ?? 0) + delta) }));
+    setQuantities((q) => ({ ...q, [flavor]: Math.max(0, Math.min(9999, (q[flavor] ?? 0) + delta, product.stock - Object.entries(q).filter(([name]) => name !== flavor).reduce((sum,[,qty]) => sum+qty,0))) }));
   }
 
   return (
@@ -67,7 +67,7 @@ export function FlavorModal({
                     <Minus size={11} className="text-primary" />
                   </button>
                   <span className="text-primary font-black text-sm w-5 text-center">{qty}</span>
-                  <button onClick={() => adjust(flavor, 1)}
+                  <button disabled={total >= product.stock} onClick={() => adjust(flavor, 1)}
                     className="w-7 h-7 rounded-full flex items-center justify-center transition-colors"
                     style={{ background: "#F97316" }}>
                     <Plus size={11} className="text-white" />
@@ -82,7 +82,7 @@ export function FlavorModal({
         <div className="px-4 py-4 border-t border-border bg-card flex-shrink-0">
           <button
             onClick={() => onConfirm(Object.entries(quantities).map(([flavor, qty]) => ({ flavor, qty })))}
-            disabled={total === 0}
+            disabled={total === 0 || total > product.stock}
             className="w-full text-white font-black py-3.5 rounded-full text-sm flex items-center justify-center gap-2 transition-all active:scale-[.98] disabled:opacity-40"
             style={{ background: total > 0 ? "#F97316" : "#ccc" }}>
             <ShoppingCart size={16} />

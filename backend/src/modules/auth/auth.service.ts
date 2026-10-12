@@ -34,7 +34,7 @@ export async function login({ username, password }: LoginInput): Promise<{ token
 
   await repository.registerSuccessfulLogin(admin.id);
 
-  const token = jwt.sign({ sub: String(admin.id) }, env.jwtSecret, {
+  const token = jwt.sign({ sub: String(admin.id), role: "admin" }, env.jwtSecret, {
     algorithm: "HS256",
     expiresIn: env.jwtExpiresIn as SignOptions["expiresIn"],
   });

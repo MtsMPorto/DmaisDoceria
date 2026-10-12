@@ -15,6 +15,7 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
   let adminId: number;
   try {
     const payload = jwt.verify(token, env.jwtSecret, { algorithms: ["HS256"] });
+    if (typeof payload !== "object" || (payload.role !== undefined && payload.role !== "admin")) throw new Error("Invalid role");
     const sub = typeof payload === "object" ? payload.sub : undefined;
     adminId = Number(sub);
     if (!Number.isInteger(adminId) || adminId <= 0) throw new Error("sub inválido");

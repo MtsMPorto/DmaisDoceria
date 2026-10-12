@@ -20,3 +20,7 @@ export async function update(req: Request, res: Response): Promise<void> {
   const id = idParamSchema.parse(req.params.id);
   res.json(await service.update(id, updateCategorySchema.parse(req.body)));
 }
+
+export async function remove(req: Request, res: Response): Promise<void> {
+  res.json(await service.remove(idParamSchema.parse(req.params.id)));
+}

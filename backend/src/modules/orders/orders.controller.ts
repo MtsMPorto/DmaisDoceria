@@ -8,8 +8,13 @@ import {
 import * as orderService from "./orders.service.js";
 
 export async function create(req: Request, res: Response): Promise<void> {
-  const input = createOrderSchema.parse(req.body);
-  const { created, order } = await orderService.createOrder(input);
+  const customer = res.locals.customer;
+  const input = createOrderSchema.parse({ ...req.body, customer: {
+    type: customer.type, name: customer.name, document: customer.type === "PJ" ? customer.document : "",
+    phone: customer.phone, zip: customer.zip, street: customer.street, streetNumber: customer.streetNumber,
+    complement: customer.complement || undefined, neighborhood: customer.neighborhood, city: customer.city, state: customer.state,
+  }});
+  const { created, order } = await orderService.createOrder(input, customer.id);
   res.status(created ? 201 : 200).json(order);
 }
 

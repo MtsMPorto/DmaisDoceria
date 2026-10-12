@@ -3,7 +3,7 @@ import { Plus, X } from "lucide-react";
 import { inputCls } from "@/components/admin/customers/inputCls";
 import { AsyncBoundary } from "@/components/ui/AsyncState";
 import { useAsync } from "@/hooks/useAsync";
-import { errorMessage } from "@/services/api";
+import { api, errorMessage } from "@/services/api";
 import { adminApi } from "@/services/endpoints";
 import type { AdminCategory } from "@/types/api";
 
@@ -12,8 +12,11 @@ export function CategoriesModal({ onChanged, onClose }: { onChanged: () => void;
   const { data, loading, error, reload } = useAsync(() => adminApi.categories(), []);
   const [newName, setNewName] = useState("");
   const [message, setMessage] = useState("");
+  const [busy, setBusy] = useState(false);
 
   async function run(action: () => Promise<unknown>) {
+    if (busy) return;
+    setBusy(true);
     setMessage("");
     try {
       await action();
@@ -21,7 +24,7 @@ export function CategoriesModal({ onChanged, onClose }: { onChanged: () => void;
       onChanged();
     } catch (err) {
       setMessage(errorMessage(err));
-    }
+    } finally { setBusy(false); }
   }
 
   return (
@@ -33,7 +36,7 @@ export function CategoriesModal({ onChanged, onClose }: { onChanged: () => void;
           <button onClick={onClose} className="text-white/60 hover:text-white"><X size={20} /></button>
         </div>
 
-        <div className="p-5 space-y-3 overflow-y-auto">
+        <fieldset disabled={busy} className="p-5 space-y-3 overflow-y-auto min-w-0">
           <div className="flex gap-2">
             <input type="text" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Nova categoria" className={`${inputCls} flex-1`} />
             <button
@@ -47,17 +50,18 @@ export function CategoriesModal({ onChanged, onClose }: { onChanged: () => void;
             <ul className="space-y-2">
               {(data ?? []).map((category) => (
                 <CategoryRow key={category.id} category={category}
+                  onRemove={() => { void run(() => api(`/api/admin/categories/${category.id}`, { method: "DELETE", auth: true })); }}
                   onPatch={(body) => run(() => adminApi.updateCategory(category.id, body))} />
               ))}
             </ul>
           </AsyncBoundary>
-        </div>
+        </fieldset>
       </div>
     </div>
   );
 }
 
-function CategoryRow({ category, onPatch }: { category: AdminCategory; onPatch: (body: Partial<{ name: string; sortOrder: number; active: boolean }>) => void }) {
+function CategoryRow({ category, onPatch, onRemove }: { onRemove: () => void; category: AdminCategory; onPatch: (body: Partial<{ name: string; sortOrder: number; active: boolean }>) => void }) {
   const [name, setName] = useState(category.name);
   const [order, setOrder] = useState(String(category.sortOrder));
 
@@ -73,6 +77,7 @@ function CategoryRow({ category, onPatch }: { category: AdminCategory; onPatch: 
         className={`text-[11px] font-black px-2.5 py-2 rounded-lg ${category.active ? "bg-green-100 text-green-700" : "bg-gray-200 text-gray-600"}`}>
         {category.active ? "Ativa" : "Inativa"}
       </button>
+      <button type="button" onClick={onRemove} className="text-xs font-bold text-red-600 px-2 py-2">Remover</button>
     </li>
   );
 }

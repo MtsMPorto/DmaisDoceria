@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import {
-  AlertTriangle, Archive, ChevronDown, ChevronUp, Layers, Package, Pencil, Plus, Search, SlidersHorizontal, TrendingUp,
+  AlertTriangle, Archive, Trash2, ChevronDown, ChevronUp, Layers, Package, Pencil, Plus, Search, SlidersHorizontal, TrendingUp,
 } from "lucide-react";
 import { AsyncBoundary } from "@/components/ui/AsyncState";
 import { CategoriesModal } from "@/components/admin/products/CategoriesModal";
@@ -9,7 +9,7 @@ import { StockAdjustModal } from "@/components/admin/products/StockAdjustModal";
 import { StockBadge } from "@/components/admin/products/StockBadge";
 import { useAsync } from "@/hooks/useAsync";
 import { brl } from "@/lib/money";
-import { errorMessage } from "@/services/api";
+import { api, errorMessage } from "@/services/api";
 import { adminApi } from "@/services/endpoints";
 import type { AdminProduct } from "@/types/api";
 
@@ -30,6 +30,7 @@ export default function AdminProducts() {
   const [adjusting, setAdjusting] = useState<AdminProduct | null>(null);
   const [showCategories, setShowCategories] = useState(false);
   const [actionError, setActionError] = useState("");
+  const [removing, setRemoving] = useState<number | null>(null);
 
   const threshold = settings.data?.lowStockThreshold ?? 10;
   const list = products.data ?? [];
@@ -72,7 +73,6 @@ export default function AdminProducts() {
     sortField === field ? (sortDir === "asc" ? <ChevronUp size={12} /> : <ChevronDown size={12} />) : null;
 
   async function toggleActive(product: AdminProduct) {
-    if (product.active && !window.confirm(`Inativar "${product.name}"? Ele some da loja, mas o histórico é mantido.`)) return;
     setActionError("");
     try {
       await adminApi.updateProduct(product.id, { active: !product.active });
@@ -80,6 +80,15 @@ export default function AdminProducts() {
     } catch (err) {
       setActionError(errorMessage(err));
     }
+  }
+
+  async function removeProduct(product: AdminProduct) {
+    if (removing !== null) return;
+    setRemoving(product.id);
+    setActionError("");
+    try { await api(`/api/admin/products/${product.id}`, {method: "DELETE", auth: true}); products.reload(); }
+    catch (err) { setActionError(errorMessage(err)); }
+    finally { setRemoving(null); }
   }
 
   const reloadAll = () => { products.reload(); categories.reload(); };
@@ -194,6 +203,7 @@ export default function AdminProducts() {
                         className="w-8 h-8 rounded-lg bg-primary/10 hover:bg-primary/20 flex items-center justify-center text-primary">
                         <Pencil size={14} />
                       </button>
+                      <button onClick={() => void removeProduct(product)} disabled={removing !== null} title="Excluir produto" aria-label="Excluir produto" className="w-8 h-8 rounded-lg bg-red-50 hover:bg-red-100 flex items-center justify-center text-red-600 disabled:opacity-50"><Trash2 size={14} /></button>
                     </div>
                   </td>
                 </tr>

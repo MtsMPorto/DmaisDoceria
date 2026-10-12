@@ -35,7 +35,6 @@ export function ConvertModal({
             ))}
             <div className="border-t border-border pt-2 space-y-1">
               {quote.discountAmount > 0 && <div className="flex justify-between text-green-600"><span>Desconto</span><span>− {formatCurrency(quote.discountAmount)}</span></div>}
-              {quote.deliveryFee > 0 && <div className="flex justify-between text-muted-foreground"><span>Entrega</span><span>+ {formatCurrency(quote.deliveryFee)}</span></div>}
               <div className="flex justify-between text-primary font-black"><span>Total</span><span className="tabular-nums">{formatCurrency(quote.total)}</span></div>
             </div>
           </div>

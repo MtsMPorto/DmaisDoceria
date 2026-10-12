@@ -1,3 +1,4 @@
+import { requireCustomer } from "../accounts/accounts.middleware.js";
 import { Router } from "express";
 import { ORDER_CREATE_LIMIT } from "../../config/limits.js";
 import { requireAuth } from "../../shared/middlewares/auth.js";
@@ -8,8 +9,8 @@ const createOrderLimiter = createRateLimiter(ORDER_CREATE_LIMIT);
 
 export const orderRoutes = Router();
 
-// Pública: o cliente não tem conta.
-orderRoutes.post("/", createOrderLimiter, orderController.create);
+// Exige conta de cliente ativa e e-mail verificado.
+orderRoutes.post("/", createOrderLimiter, requireCustomer, orderController.create);
 
 // Admin.
 orderRoutes.get("/", requireAuth, orderController.list);

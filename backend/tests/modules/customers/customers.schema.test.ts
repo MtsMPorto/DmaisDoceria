@@ -14,9 +14,9 @@ const VALID_CPF = "123.456.789-09";
 const VALID_CNPJ = "12.345.678/0001-95";
 
 describe("createCustomerSchema", () => {
-  it("aceita PF com CPF válido e normaliza dígitos", () => {
-    const parsed = createCustomerSchema.parse({ type: "PF", name: "Maria", phone: "(51) 98209-2567", document: VALID_CPF });
-    assert.equal(parsed.document, "12345678909");
+  it("aceita PF sem CPF e normaliza telefone", () => {
+    const parsed = createCustomerSchema.parse({ type: "PF", name: "Maria", phone: "(51) 98209-2567", document: null });
+    assert.equal(parsed.document, null);
     assert.equal(parsed.phone, "51982092567");
   });
 
@@ -63,8 +63,8 @@ describe("updateCustomerSchema / listagem", () => {
 describe("documentProblem", () => {
   it("nulo é aceito; inválido devolve mensagem", () => {
     assert.equal(documentProblem("PF", null), null);
-    assert.equal(documentProblem("PF", "12345678909"), null);
-    assert.equal(documentProblem("PF", "12345678900"), "CPF inválido.");
+    assert.equal(documentProblem("PF", "12345678909"), "Pessoa física não deve informar documento.");
+    assert.equal(documentProblem("PF", "12345678900"), "Pessoa física não deve informar documento.");
     assert.equal(documentProblem("PJ", "12345678000195"), null);
     assert.equal(documentProblem("PJ", "12345678000100"), "CNPJ inválido.");
   });

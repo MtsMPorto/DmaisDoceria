@@ -44,7 +44,7 @@ export function CartDrawer({ onClose, onCheckout }: { onClose: () => void; onChe
                           <div className="flex items-center gap-1.5">
                             <button onClick={() => updateQty(iKey, -1)} className="w-6 h-6 rounded-full bg-muted hover:bg-muted/70 flex items-center justify-center"><Minus size={11} className="text-primary" /></button>
                             <span className="text-primary font-black text-sm w-5 text-center">{item.qty}</span>
-                            <button onClick={() => updateQty(iKey, 1)} className="w-6 h-6 rounded-full bg-accent hover:bg-orange-500 flex items-center justify-center"><Plus size={11} className="text-white" /></button>
+                            <button disabled={cart.filter(i => i.id === item.id).reduce((sum,i) => sum+i.qty,0) >= item.stock} onClick={() => updateQty(iKey, 1)} className="w-6 h-6 rounded-full bg-accent hover:bg-orange-500 flex items-center justify-center"><Plus size={11} className="text-white" /></button>
                             <button onClick={() => removeItem(iKey)} className="w-6 h-6 rounded-full bg-red-50 hover:bg-red-100 flex items-center justify-center ml-1"><Trash2 size={11} className="text-red-500" /></button>
                           </div>
                         </div>
@@ -70,7 +70,7 @@ export function CartDrawer({ onClose, onCheckout }: { onClose: () => void; onChe
                     ))}
                   </div>
                 )}
-                <button onClick={onCheckout} disabled={tooLow.length > 0}
+                <button onClick={onCheckout} disabled={tooLow.length > 0 || overStock.length > 0}
                   className="w-full bg-[#25D366] hover:bg-[#1ebe5a] disabled:opacity-50 disabled:cursor-not-allowed active:scale-[.98] text-white font-black py-3.5 rounded-full text-base flex items-center justify-center gap-2 shadow-lg transition-all">
                   <WaIcon /> Finalizar pelo WhatsApp
                 </button>

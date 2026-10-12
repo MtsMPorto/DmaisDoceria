@@ -3,7 +3,7 @@ import { Link } from "react-router";
 import { Minus, Plus } from "lucide-react";
 import { LOW_STOCK_THRESHOLD } from "@/config/constants";
 import { useCart } from "@/contexts/CartContext";
-import { Stars } from "@/components/ui/Stars";
+// import { Stars } from "@/components/ui/Stars";
 import type { Product } from "@/types";
 
 export function ProductCard({
@@ -43,7 +43,8 @@ export function ProductCard({
           <h3 className="text-primary font-bold text-xs leading-tight mt-0.5 line-clamp-2 hover:underline">{product.name}</h3>
         </Link>
         <p className="text-[10px] text-muted-foreground mt-0.5">{product.unit}</p>
-        <div className="mt-1"><Stars count={product.stars} size={10} /></div>
+        {/* Avaliações desativadas nesta versão. */}
+        {/* <div className="mt-1"><Stars count={product.stars} size={10} /></div> */}
 
         <div className="flex items-center justify-between mt-2 pt-1.5">
           <div>
@@ -52,10 +53,11 @@ export function ProductCard({
 
           {hasFlavors ? (
             <button
+              disabled={product.stock <= 0}
               onClick={onOpenFlavorModal}
               className="active:scale-95 text-white text-[10px] font-bold px-2.5 py-1 rounded-full transition-all flex items-center gap-1"
               style={{ background: totalInCart > 0 ? "#27408A" : "#F97316" }}>
-              {totalInCart > 0 ? `🍫 ${totalInCart} un · Editar` : "Escolher Sabor"}
+              {product.stock <= 0 ? "Sem estoque" : totalInCart > 0 ? `🍫 ${totalInCart} un · Editar` : "Escolher Sabor"}
             </button>
           ) : inCart ? (
             <div className="flex items-center gap-1">
@@ -63,14 +65,14 @@ export function ProductCard({
                 <Minus size={10} className="text-primary" />
               </button>
               <span className="text-primary font-black text-xs w-4 text-center">{inCart.qty}</span>
-              <button onClick={() => updateQty(cKey, 1)} className="w-6 h-6 rounded-full bg-accent hover:bg-orange-500 flex items-center justify-center transition-colors">
+              <button disabled={totalInCart >= product.stock} onClick={() => updateQty(cKey, 1)} className="w-6 h-6 rounded-full bg-accent hover:bg-orange-500 flex items-center justify-center transition-colors">
                 <Plus size={10} className="text-white" />
               </button>
             </div>
           ) : (
-            <button onClick={() => addToCart(product)}
+            <button disabled={product.stock <= 0} onClick={() => addToCart(product)}
               className="bg-accent hover:bg-orange-500 active:scale-95 text-white text-[10px] font-bold px-2.5 py-1 rounded-full transition-all">
-              + Adicionar
+              {product.stock <= 0 ? "Sem estoque" : "+ Adicionar"}
             </button>
           )}
         </div>
