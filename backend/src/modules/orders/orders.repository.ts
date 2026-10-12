@@ -114,6 +114,11 @@ export function findReceiptById(id: number): Promise<OrderReceipt | null> {
 export async function listPage(filters: OrderFilters, skip: number, take: number) {
   const where: Prisma.OrderWhereInput = {
     ...(filters.status ? { status: filters.status } : {}),
+    // A solicitação só está pendente enquanto a venda não foi concluída/cancelada.
+    // Considerar a venda também cobre registros antigos com status desatualizado.
+    ...(filters.status === "REQUESTED" ? {
+      OR: [{ sale: { is: null } }, { sale: { is: { status: "DRAFT" } } }],
+    } : {}),
     ...(filters.createdFrom || filters.createdTo
       ? {
           createdAt: {

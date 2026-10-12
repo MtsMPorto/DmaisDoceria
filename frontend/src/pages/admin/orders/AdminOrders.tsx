@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight, Eye, Inbox } from "lucide-react";
 import { AsyncBoundary } from "@/components/ui/AsyncState";
 import { FormError, Modal } from "@/components/ui/Modal";
@@ -8,7 +8,6 @@ import { formatCEP, formatDocument, formatPhone } from "@/lib/format";
 import { brl } from "@/lib/money";
 import { errorMessage } from "@/services/api";
 import { adminApi } from "@/services/endpoints";
-import type { OrderStatus } from "@/types/api";
 
 const PAGE_SIZE = 20;
 
@@ -18,27 +17,24 @@ const formatDateTime = (iso: string) =>
 // "Solicitações": pedidos registrados pela loja. Não baixam estoque. Só podem ser cancelados
 // (REQUESTED -> CANCELED); viram CONFIRMED quando a venda vinculada é confirmada.
 export default function AdminOrders({ onOpenSale }: { onOpenSale: (saleId: number) => void }) {
-  const [status, setStatus] = useState<OrderStatus | "ALL">("REQUESTED");
   const [page, setPage] = useState(1);
   const [openId, setOpenId] = useState<number | null>(null);
 
   const list = useAsync(
-    () => adminApi.orders({ status: status === "ALL" ? undefined : status, page, limit: PAGE_SIZE }),
-    [status, page],
+    () => adminApi.orders({ status: "REQUESTED", page, limit: PAGE_SIZE }),
+    [page],
   );
 
   const totalPages = Math.max(1, Math.ceil((list.data?.total ?? 0) / PAGE_SIZE));
+  useEffect(() => {
+    if (!list.loading && list.data && page > totalPages) setPage(totalPages);
+  }, [list.loading, list.data, page, totalPages]);
 
   return (
     <div className="space-y-4">
       <div className="bg-white rounded-2xl p-4 shadow-sm border border-border flex flex-wrap gap-2 items-center justify-between">
         <div className="flex gap-1 bg-muted/30 p-1 rounded-xl">
-          {([["REQUESTED", "Solicitadas"], ["CONFIRMED", "Confirmadas"], ["CANCELED", "Canceladas"], ["ALL", "Todas"]] as const).map(([key, label]) => (
-            <button key={key} onClick={() => { setStatus(key); setPage(1); }}
-              className={`px-3 py-1.5 text-xs font-bold rounded-lg ${status === key ? "bg-white text-primary shadow-sm" : "text-muted-foreground hover:text-primary"}`}>
-              {label}
-            </button>
-          ))}
+          <span className="px-3 py-1.5 text-xs font-bold rounded-lg bg-white text-primary shadow-sm">Solicitações pendentes</span>
         </div>
         <p className="text-muted-foreground text-xs">Mais recentes primeiro · pedidos não baixam estoque</p>
       </div>
@@ -142,7 +138,7 @@ function OrderModal({ id, onClose, onChanged, onOpenSale }: {
     try {
       await adminApi.cancelOrder(id);
       onChanged();
-      detail.reload();
+      onClose();
     } catch (err) {
       setError(errorMessage(err));
     } finally {
