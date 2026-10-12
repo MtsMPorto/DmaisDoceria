@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router";
-import { ArrowLeft, ShoppingCart, Package, Truck } from "lucide-react";
+import { ArrowLeft, ShoppingCart, Package, Truck, Minus, Plus } from "lucide-react";
+import { CartDrawer } from "@/components/store/CartDrawer";
+import { CheckoutModal } from "@/components/store/CheckoutModal";
+import { useCheckoutForm } from "@/hooks/useCheckoutForm";
 import logoImg from "@/assets/images/Logo_Doces-removebg-preview__1_.png";
 import { useProducts } from "@/contexts/ProductsContext";
 import { useCart } from "@/contexts/CartContext";
@@ -14,7 +17,8 @@ export default function ProductPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { products, loading, error, reload } = useProducts();
-  const { addToCart, cart, cartKey, totalItems } = useCart();
+  const { addToCart, updateQty, cart, cartKey, totalItems } = useCart();
+  const checkoutForm = useCheckoutForm();
 
   const product = products.find((p) => p.id === Number(id));
 
@@ -23,6 +27,14 @@ export default function ProductPage() {
   );
   const [showUpsell, setShowUpsell] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+
+  useEffect(() => {
+    if (!cartOpen && !checkoutOpen && !showUpsell) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = previous; };
+  }, [cartOpen, checkoutOpen, showUpsell]);
 
   // Reset flavor when product changes
   useEffect(() => {
@@ -58,11 +70,19 @@ export default function ProductPage() {
     ? related.slice(0, 2)
     : products.filter((p) => p.active && p.id !== product.id).slice(0, 2);
 
-  const currentKey = `${product.id}::${selectedFlavor ?? ""}`;
+  const flavor = product.flavors?.includes(selectedFlavor ?? "") ? selectedFlavor : product.flavors?.[0];
+  const currentKey = `${product.id}::${flavor ?? ""}`;
   const inCart = cart.find((i) => cartKey(i) === currentKey);
+  const totalForProduct = cart.filter(i => i.id === product.id).reduce((sum, i) => sum + i.qty, 0);
+  const atStockLimit = totalForProduct >= product.stock;
+
+  function increaseQuantity() {
+    if (!atStockLimit) addToCart(product, flavor);
+  }
 
   function handleAddToCart() {
-    addToCart(product, selectedFlavor);
+    if (atStockLimit) return;
+    increaseQuantity();
     setShowUpsell(true);
   }
 
@@ -78,7 +98,7 @@ export default function ProductPage() {
           <Link to="/">
             <img src={logoImg} alt="D'mais" className="h-10 w-10 object-contain" />
           </Link>
-          <Link to="/" className="relative">
+          <button type="button" onClick={() => setCartOpen(true)} className="relative" aria-label="Ver carrinho">
             <div className="w-9 h-9 rounded-full flex items-center justify-center" style={{ background: "#F97316" }}>
               <ShoppingCart size={16} className="text-white" />
             </div>
@@ -87,7 +107,7 @@ export default function ProductPage() {
                 {totalItems}
               </span>
             )}
-          </Link>
+          </button>
         </div>
       </header>
 
@@ -166,6 +186,24 @@ export default function ProductPage() {
             </div>
           )}
 
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white px-4 py-3 border border-border">
+            <div>
+              <p className="text-sm font-bold text-primary">Quantidade no carrinho</p>
+              {flavor && <p className="text-xs text-muted-foreground">Sabor: {flavor}</p>}
+            </div>
+            <div className="flex items-center gap-3">
+              <button type="button" onClick={() => updateQty(currentKey, -1)} disabled={!inCart}
+                aria-label="Diminuir quantidade" className="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center disabled:opacity-40">
+                <Minus size={16} />
+              </button>
+              <span aria-live="polite" className="min-w-8 text-center font-black text-primary">{inCart?.qty ?? 0}</span>
+              <button type="button" onClick={increaseQuantity} disabled={atStockLimit}
+                aria-label="Aumentar quantidade" className="w-9 h-9 rounded-full bg-accent text-white flex items-center justify-center disabled:opacity-40">
+                <Plus size={16} />
+              </button>
+            </div>
+          </div>
+
           {/* No-price note */}
           <div className="flex items-center gap-2 px-4 py-3 rounded-2xl text-sm" style={{ background: "rgba(37,211,102,0.08)", border: "1px solid rgba(37,211,102,0.2)" }}>
             <WaIcon size={16} />
@@ -210,6 +248,7 @@ export default function ProductPage() {
               </Link>
               <button
                 onClick={handleAddToCart}
+                disabled={atStockLimit}
                 className="flex-1 py-4 rounded-full text-white font-black flex items-center justify-center gap-2 shadow-lg"
                 style={{ background: "#27408A" }}>
                 <ShoppingCart size={18} /> Adicionar mais
@@ -218,7 +257,7 @@ export default function ProductPage() {
           ) : (
             <button
               onClick={handleAddToCart}
-              disabled={product.stock === 0}
+              disabled={atStockLimit}
               className="w-full py-4 rounded-full text-white font-black flex items-center justify-center gap-2 shadow-xl transition-all active:scale-[.98]"
               style={product.stock === 0
                 ? { background: "#ccc", cursor: "not-allowed" }
@@ -236,9 +275,11 @@ export default function ProductPage() {
           product={product}
           suggestions={upsellProducts}
           onClose={() => setShowUpsell(false)}
-          onGoToCart={() => { setShowUpsell(false); navigate("/"); }}
+          onGoToCart={() => { setShowUpsell(false); setCartOpen(true); }}
         />
       )}
+      {cartOpen && <CartDrawer onClose={() => setCartOpen(false)} onCheckout={() => { setCartOpen(false); setCheckoutOpen(true); }} />}
+      {checkoutOpen && <CheckoutModal form={checkoutForm} onClose={() => setCheckoutOpen(false)} />}
     </div>
   );
 }
