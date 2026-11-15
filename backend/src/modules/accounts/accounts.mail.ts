@@ -32,8 +32,17 @@ export async function sendAccountEmail(
         text,
       }),
     });
-    if (!response.ok) throw new Error("Email provider error");
-  } catch {
+    if (!response.ok) {
+      console.error("Resend rejected email request", {
+        status: response.status,
+        requestId: response.headers.get("x-resend-request-id"),
+      });
+      throw new Error("Email provider error");
+    }
+  } catch (error) {
+    if (error instanceof Error && error.name !== "Error") {
+      console.error("Resend email request failed", { type: error.name });
+    }
     throw new AppError(
       503,
       "EMAIL_UNAVAILABLE",
