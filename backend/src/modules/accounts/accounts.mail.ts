@@ -33,9 +33,17 @@ export async function sendAccountEmail(
       }),
     });
     if (!response.ok) {
+      const providerError = await response.json()
+        .then((body: unknown) => (
+          body && typeof body === "object" && "message" in body && typeof body.message === "string"
+            ? body.message.slice(0, 300)
+            : "No provider message"
+        ))
+        .catch(() => "No provider message");
       console.error("Resend rejected email request", {
         status: response.status,
         requestId: response.headers.get("x-resend-request-id"),
+        providerError,
       });
       throw new Error("Email provider error");
     }
